@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'login_page.dart';
+
 
 class RegisterPage extends StatelessWidget {
   const RegisterPage({super.key});
@@ -129,15 +131,23 @@ class RegisterPage extends StatelessWidget {
               children: [
                 const Text("Already have account?"),
                 const SizedBox(width: 5),
-                Text(
-                  "Sign in!",
-                  style: TextStyle(
-                    color: const Color(0xFF635BFF),
-                    fontWeight: FontWeight.bold,
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => const LoginPage()),
+                    );
+                  },
+                  child: Text(
+                    "Sign in!",
+                    style: const TextStyle(
+                      color: Color(0xFF635BFF),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
-            ),
+            )
           ],
         ),
       ),
