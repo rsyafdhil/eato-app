@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'register_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -125,7 +126,14 @@ class _LoginPageState extends State<LoginPage> {
                     style: TextStyle(color: Colors.grey),
                   ),
                   GestureDetector(
-                    onTap: () {},
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const RegisterPage(),
+                        ),
+                      );
+                    },
                     child: const Text(
                       "Sign Up!",
                       style: TextStyle(
@@ -134,6 +142,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                   ),
+
                 ],
               )
             ],
