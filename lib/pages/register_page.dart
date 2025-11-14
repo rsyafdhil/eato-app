@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 class RegisterPage extends StatelessWidget {
-  const RegisterPage({super.key});
+  const RegisterPage({super.key, required this.title});
+
+  final String title; // Judul Halaman
 
   @override
   Widget build(BuildContext context) {
@@ -14,12 +16,9 @@ class RegisterPage extends StatelessWidget {
             const SizedBox(height: 40),
 
             // Title EatO
-            const Text(
-              "EatO",
-              style: TextStyle(
-                fontSize: 40,
-                fontWeight: FontWeight.bold,
-              ),
+            Text(
+              title,
+              style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold),
             ),
 
             const SizedBox(height: 40),
@@ -28,7 +27,7 @@ class RegisterPage extends StatelessWidget {
             Align(
               alignment: Alignment.centerLeft,
               child: const Text(
-                "Nomor Telefen*",
+                "Nomor Telefon*",
                 style: TextStyle(fontSize: 14),
               ),
             ),
@@ -40,6 +39,7 @@ class RegisterPage extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
+              style: const TextStyle(fontSize: 14),
             ),
 
             const SizedBox(height: 20),
@@ -47,10 +47,7 @@ class RegisterPage extends StatelessWidget {
             // Username
             Align(
               alignment: Alignment.centerLeft,
-              child: const Text(
-                "Username",
-                style: TextStyle(fontSize: 14),
-              ),
+              child: const Text("Username", style: TextStyle(fontSize: 14)),
             ),
             const SizedBox(height: 6),
             TextField(
@@ -60,6 +57,7 @@ class RegisterPage extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
+              style: const TextStyle(fontSize: 14),
             ),
 
             const SizedBox(height: 20),
@@ -67,10 +65,7 @@ class RegisterPage extends StatelessWidget {
             // Password
             Align(
               alignment: Alignment.centerLeft,
-              child: const Text(
-                "Password*",
-                style: TextStyle(fontSize: 14),
-              ),
+              child: const Text("Password*", style: TextStyle(fontSize: 14)),
             ),
             const SizedBox(height: 6),
             TextField(
@@ -81,6 +76,7 @@ class RegisterPage extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
+              style: const TextStyle(fontSize: 14),
             ),
 
             const SizedBox(height: 6),
@@ -90,10 +86,7 @@ class RegisterPage extends StatelessWidget {
               alignment: Alignment.centerRight,
               child: Text(
                 "Forgot Password?",
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade500,
-                ),
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
               ),
             ),
 
@@ -113,10 +106,7 @@ class RegisterPage extends StatelessWidget {
                 onPressed: () {},
                 child: const Text(
                   "Sign Up",
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.white,
-                  ),
+                  style: TextStyle(fontSize: 16, color: Colors.white),
                 ),
               ),
             ),
