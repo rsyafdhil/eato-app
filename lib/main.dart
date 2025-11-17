@@ -1,5 +1,6 @@
+import 'package:eato_app/pages/kantin_page.dart';
 import 'package:flutter/material.dart';
-import 'pages/checkout_page.dart';
+import 'pages/kantin_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -32,7 +33,7 @@ class MyApp extends StatelessWidget {
         // tested with just a hot reload.
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const CheckoutPage(),
+      home: const KantinPage(),
     );
   }
 }
