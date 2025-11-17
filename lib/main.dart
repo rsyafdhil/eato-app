@@ -1,9 +1,11 @@
-import 'package:eato_app/pages/checkout_page.dart';
-import 'package:eato_app/pages/riwayat_transaksi_page.dart';
 import 'package:flutter/material.dart';
+import 'pages/checkout_page.dart';
+import 'pages/riwayat_transaksi_page.dart';
+import 'pages/kantin_page.dart';
 import 'pages/register_page.dart';
 import 'pages/login_page.dart';
 import 'pages/checkout_page.dart';
+import 'pages/kantin_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -36,7 +38,7 @@ class MyApp extends StatelessWidget {
         // tested with just a hot reload.
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const RegisterPage(title: "EatO"),
+      home: const KantinPage(),
     );
   }
 }
