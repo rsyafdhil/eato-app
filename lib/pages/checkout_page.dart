@@ -1,13 +1,21 @@
 import 'package:flutter/material.dart';
 
-class CheckoutPage extends StatelessWidget {
+class CheckoutPage extends StatefulWidget {
   const CheckoutPage({super.key});
+
+  @override
+  State<CheckoutPage> createState() => _CheckoutPageState();
+}
+
+class _CheckoutPageState extends State<CheckoutPage> {
+  // untuk contoh: dua produk, masing-masing punya qty sendiri
+  int qty1 = 0;
+  int qty2 = 0;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      // AppBar custom simple
       body: SafeArea(
         child: Column(
           children: [
@@ -49,20 +57,53 @@ class CheckoutPage extends StatelessWidget {
                 child: Column(
                   children: [
                     // Card produk 1
-                    _CheckoutProductCard(),
+                    _CheckoutProductCard(
+                      productName: "Product 1",
+                      priceText: "Price 1",
+                      qty: qty1,
+                      onIncrement: () {
+                        setState(() {
+                          qty1++;
+                        });
+                      },
+                      onDecrement: () {
+                        if (qty1 > 0) {
+                          setState(() {
+                            qty1--;
+                          });
+                        }
+                      },
+                    ),
                     const SizedBox(height: 8),
+
                     // Card produk 2
-                    _CheckoutProductCard(),
+                    _CheckoutProductCard(
+                      productName: "Product 2",
+                      priceText: "Price 2",
+                      qty: qty2,
+                      onIncrement: () {
+                        setState(() {
+                          qty2++;
+                        });
+                      },
+                      onDecrement: () {
+                        if (qty2 > 0) {
+                          setState(() {
+                            qty2--;
+                          });
+                        }
+                      },
+                    ),
 
                     const SizedBox(height: 16),
 
                     // Card Tujuan
-                    _AlamatCard(),
+                    const _AlamatCard(),
 
                     const SizedBox(height: 16),
 
                     // Card Fee
-                    _FeeCard(),
+                    const _FeeCard(),
 
                     const SizedBox(height: 24),
 
@@ -96,7 +137,7 @@ class CheckoutPage extends StatelessWidget {
             ),
 
             // Bottom navigation dummy
-            _BottomNavBar(currentIndex: 0),
+            const _BottomNavBar(currentIndex: 0),
           ],
         ),
       ),
@@ -105,10 +146,27 @@ class CheckoutPage extends StatelessWidget {
 }
 
 class _CheckoutProductCard extends StatelessWidget {
-  const _CheckoutProductCard();
+  final String productName;
+  final String priceText;
+  final int qty;
+  final VoidCallback onIncrement;
+  final VoidCallback onDecrement;
+
+  const _CheckoutProductCard({
+    required this.productName,
+    required this.priceText,
+    required this.qty,
+    required this.onIncrement,
+    required this.onDecrement,
+  });
 
   @override
   Widget build(BuildContext context) {
+    // Logic warna & enable/disable tombol
+    final bool canDecrement = qty > 0;
+    final Color activeColor = const Color(0xFF635BFF);
+    final Color disabledColor = Colors.grey.shade300;
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -139,51 +197,78 @@ class _CheckoutProductCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  "Product name",
-                  style: TextStyle(
+                Text(
+                  productName,
+                  style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Text(
-                  "Price",
-                  style: TextStyle(
+                Text(
+                  priceText,
+                  style: const TextStyle(
                     fontSize: 12,
                     color: Colors.grey,
                   ),
                 ),
                 const SizedBox(height: 6),
+
+                // Baris + Qty -
                 Row(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF635BFF),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: const Text(
-                        "Qty",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
+                    // Tombol +
+                    GestureDetector(
+                      onTap: onIncrement,
+                      child: Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          color: activeColor,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Center(
+                          child: Icon(
+                            Icons.add,
+                            size: 16,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Container(
-                      width: 20,
-                      height: 20,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(6),
+
+                    // Teks Qty (angka)
+                    Text(
+                      qty.toString(),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+
+                    // Tombol -
+                    GestureDetector(
+                      onTap: canDecrement ? onDecrement : null,
+                      child: Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          color: canDecrement ? activeColor : disabledColor,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Center(
+                          child: Icon(
+                            Icons.remove,
+                            size: 16,
+                            color: canDecrement ? Colors.white : Colors.grey,
+                          ),
+                        ),
                       ),
                     ),
                   ],
-                )
+                ),
               ],
             ),
           ),
@@ -225,8 +310,10 @@ class _AlamatCard extends StatelessWidget {
           TextField(
             decoration: InputDecoration(
               hintText: "Alamat anda",
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 10,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -249,8 +336,10 @@ class _AlamatCard extends StatelessWidget {
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF635BFF),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -258,7 +347,10 @@ class _AlamatCard extends StatelessWidget {
                 onPressed: () {},
                 child: const Text(
                   "Simpan",
-                  style: TextStyle(fontSize: 12),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ),
@@ -321,9 +413,9 @@ class _BottomNavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: 60,
-      decoration: BoxDecoration(
-        color: const Color(0xFFF2EAFE),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      decoration: const BoxDecoration(
+        color: Color(0xFFF2EAFE),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
