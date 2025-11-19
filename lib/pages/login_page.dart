@@ -21,16 +21,12 @@ class _LoginPageState extends State<LoginPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-
               const SizedBox(height: 60),
 
               // APP TITLE
               const Text(
                 "EatO",
-                style: TextStyle(
-                  fontSize: 42,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 42, fontWeight: FontWeight.bold),
               ),
 
               const SizedBox(height: 60),
@@ -38,10 +34,7 @@ class _LoginPageState extends State<LoginPage> {
               // Username label
               const Align(
                 alignment: Alignment.centerLeft,
-                child: Text(
-                  "Username",
-                  style: TextStyle(fontSize: 14),
-                ),
+                child: Text("Username", style: TextStyle(fontSize: 14)),
               ),
               const SizedBox(height: 6),
 
@@ -61,10 +54,7 @@ class _LoginPageState extends State<LoginPage> {
               // Password label
               const Align(
                 alignment: Alignment.centerLeft,
-                child: Text(
-                  "Password",
-                  style: TextStyle(fontSize: 14),
-                ),
+                child: Text("Password", style: TextStyle(fontSize: 14)),
               ),
               const SizedBox(height: 6),
 
@@ -126,11 +116,12 @@ class _LoginPageState extends State<LoginPage> {
                     style: TextStyle(color: Colors.grey),
                   ),
                   GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const RegisterPage(),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              const RegisterPage(title: "EatO"),
                         ),
                       );
                     },
@@ -142,9 +133,8 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                   ),
-
                 ],
-              )
+              ),
             ],
           ),
         ),
