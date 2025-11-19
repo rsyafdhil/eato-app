@@ -1,5 +1,8 @@
+import 'package:eato_app/pages/checkout_page.dart';
+import 'package:eato_app/pages/riwayat_transaksi_page.dart';
 import 'package:flutter/material.dart';
-import 'package:eato_flutter/pages/register_page.dart';
+import 'pages/register_page.dart';
+import 'pages/login_page.dart';
 
 void main() {
   runApp(const MyApp());
