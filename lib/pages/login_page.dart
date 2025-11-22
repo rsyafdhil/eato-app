@@ -23,7 +23,7 @@ class _LoginPageState extends State<LoginPage> {
             children: [
 
               const SizedBox(height: 60),
-
+              
               // APP TITLE
               const Text(
                 "EatO",
@@ -32,7 +32,7 @@ class _LoginPageState extends State<LoginPage> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-
+              
               const SizedBox(height: 60),
 
               // Username label
@@ -142,7 +142,6 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                   ),
-
                 ],
               )
             ],
