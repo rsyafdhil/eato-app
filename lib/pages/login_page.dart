@@ -1,5 +1,11 @@
+import 'dart:convert';
+import 'dart:io';
+
+import '../services/api_services.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'register_page.dart';
+import 'package:http/http.dart' as http;
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -9,8 +15,40 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final TextEditingController usernameController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+
+  bool isLoading = false;
+
+  Future<void> login() async {
+    final response = await http.post(
+      Uri.parse("http://localhost:8000/api/login"), // ganti sesuai API kamu
+      body: {
+        'email': emailController.text,
+        'password': passwordController.text,
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+
+      // Contoh format respons Laravel:
+      // { "success": true, "message": "Login berhasil" }
+
+      if (data['success'] == true) {
+        // 👉 Pindah ke halaman daftar_kantin
+        Navigator.pushNamed(context, '/daftar_kantin');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(data['message'] ?? 'Login gagal')),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Terjadi kesalahan pada server')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,15 +72,15 @@ class _LoginPageState extends State<LoginPage> {
               // Username label
               const Align(
                 alignment: Alignment.centerLeft,
-                child: Text("Username", style: TextStyle(fontSize: 14)),
+                child: Text("Email", style: TextStyle(fontSize: 14)),
               ),
               const SizedBox(height: 6),
 
               // Username TextField
               TextField(
-                controller: usernameController,
+                controller: emailController,
                 decoration: InputDecoration(
-                  hintText: "username",
+                  hintText: "email",
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -91,7 +129,7 @@ class _LoginPageState extends State<LoginPage> {
                 width: double.infinity,
                 height: 55,
                 child: ElevatedButton(
-                  onPressed: () {},
+                  onPressed: login,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF6A5CFF), // Purple button
                     shape: RoundedRectangleBorder(
