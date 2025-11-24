@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'register_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -9,8 +11,54 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final TextEditingController usernameController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+
+  bool isLoading = false;
+
+  Future<void> login() async {
+    setState(() {
+      isLoading = true; 
+    });
+
+    try {
+      final response = await http.post(
+        Uri.parse("http://localhost:8000/api/login"),
+        body: {
+          'email': emailController.text,
+          'password': passwordController.text,
+        },
+      );
+
+      setState(() {
+        isLoading = false; // ❗ HIDE LOADING (on finish)
+      });
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        if (data['success'] == true) {
+          Navigator.pushNamed(context, '/daftar_kantin');
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(data['message'] ?? 'Login gagal')),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Terjadi kesalahan pada server')),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        isLoading = false; // ❗ Always hide loader on error
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: $e")),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,35 +69,25 @@ class _LoginPageState extends State<LoginPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-
               const SizedBox(height: 60),
-              
-              // APP TITLE
+
               const Text(
                 "EatO",
-                style: TextStyle(
-                  fontSize: 42,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 42, fontWeight: FontWeight.bold),
               ),
-              
+
               const SizedBox(height: 60),
 
-              // Username label
               const Align(
                 alignment: Alignment.centerLeft,
-                child: Text(
-                  "Username",
-                  style: TextStyle(fontSize: 14),
-                ),
+                child: Text("Email", style: TextStyle(fontSize: 14)),
               ),
               const SizedBox(height: 6),
 
-              // Username TextField
               TextField(
-                controller: usernameController,
+                controller: emailController,
                 decoration: InputDecoration(
-                  hintText: "username",
+                  hintText: "email",
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -58,17 +96,12 @@ class _LoginPageState extends State<LoginPage> {
 
               const SizedBox(height: 20),
 
-              // Password label
               const Align(
                 alignment: Alignment.centerLeft,
-                child: Text(
-                  "Password",
-                  style: TextStyle(fontSize: 14),
-                ),
+                child: Text("Password", style: TextStyle(fontSize: 14)),
               ),
               const SizedBox(height: 6),
 
-              // Password field
               TextField(
                 controller: passwordController,
                 obscureText: true,
@@ -82,42 +115,41 @@ class _LoginPageState extends State<LoginPage> {
 
               const SizedBox(height: 10),
 
-              // Forgot password
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
                   onPressed: () {},
-                  child: const Text(
-                    "Forgot Password?",
-                    style: TextStyle(color: Colors.grey),
-                  ),
+                  child: const Text("Forgot Password?",
+                      style: TextStyle(color: Colors.grey)),
                 ),
               ),
 
               const SizedBox(height: 10),
-
-              // Sign In Button
               SizedBox(
                 width: double.infinity,
                 height: 55,
                 child: ElevatedButton(
-                  onPressed: () {},
+                  onPressed: isLoading ? null : login, // disable when loading
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF6A5CFF), // Purple button
+                    backgroundColor: const Color(0xFF6A5CFF),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
                     ),
                   ),
-                  child: const Text(
-                    "Sign In",
-                    style: TextStyle(fontSize: 18, color: Colors.white),
-                  ),
+                  child: isLoading
+                      ? const CircularProgressIndicator(
+                          color: Colors.white,
+                        )
+                      : const Text(
+                          "Sign In",
+                          style: TextStyle(
+                              fontSize: 18, color: Colors.white),
+                        ),
                 ),
               ),
 
               const SizedBox(height: 20),
 
-              // Sign Up link
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -126,11 +158,12 @@ class _LoginPageState extends State<LoginPage> {
                     style: TextStyle(color: Colors.grey),
                   ),
                   GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const RegisterPage(),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              const RegisterPage(title: "EatO"),
                         ),
                       );
                     },
@@ -143,7 +176,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                 ],
-              )
+              ),
             ],
           ),
         ),
