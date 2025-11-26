@@ -1,4 +1,5 @@
 import 'package:eato_app/pages/kantin_page.dart';
+import 'package:eato_app/pages/profile_page.dart';
 import 'package:flutter/material.dart';
 import 'pages/checkout_page.dart';
 import 'pages/riwayat_transaksi_page.dart';
@@ -7,6 +8,7 @@ import 'pages/register_page.dart';
 import 'pages/login_page.dart';
 import 'pages/preview_toko_page.dart';
 import 'pages/home_page.dart';
+import 'package:flutter/material.dart';
 
 void main() {
   runApp(const MyApp());
@@ -39,7 +41,7 @@ class MyApp extends StatelessWidget {
         // tested with just a hot reload.
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      initialRoute: '/homepage',
+      initialRoute: '/profile',
       // home: const LoginPage(),
       routes: {
         '/': (context) => const LoginPage(),
@@ -49,6 +51,7 @@ class MyApp extends StatelessWidget {
         '/checkout' : (context) => const CheckoutPage(),
         '/homepage' : (context) => const HomePage(username: 'rassya'),
         '/preview' : (context) => const PreviewTokoPage(namaToko: 'Gacor'),
+        '/profile' : (context) => const ProfilePage(username: 'saga', phoneNumber: '08943475832')
       },
     );
   }
