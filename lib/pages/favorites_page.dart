@@ -20,9 +20,8 @@ class _FavoritePageState extends State<FavoritePage> {
   int _selectedIndex = 1;
 
   final List<Map<String, dynamic>> favoriteList = [
-    {'title': 'Food 1', 'price': 'Rp 12.000'},
-    {'title': 'Food 2', 'price': 'Rp 15.000'},
-    {'title': 'Food 3', 'price': 'Rp 18.000'},
+    {'title': 'Makanan #1', 'store': 'Toko', 'price': 'Harga'},
+    {'title': 'Makanan #1', 'store': 'Toko', 'price': 'Harga'},
   ];
 
   @override
@@ -37,17 +36,60 @@ class _FavoritePageState extends State<FavoritePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // HEADER
-            const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Text(
-                "Favorite",
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
+            // BACK BUTTON & HEADER
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Back Button
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => HomePage(
+                            username: widget.username,
+                            phoneNumber: widget.phoneNumber,
+                          ),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF635BFF),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.arrow_back,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 25),
+                  // Title
+                  const Text(
+                    "Menu",
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Text(
+                    "Favorit Anda",
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
             ),
+
+            const SizedBox(height: 5),
 
             // LIST / EMPTY VIEW
             Expanded(
@@ -58,46 +100,81 @@ class _FavoritePageState extends State<FavoritePage> {
                         style: TextStyle(fontSize: 14, color: Colors.grey),
                       ),
                     )
-                  : GridView.builder(
+                  : ListView.builder(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 10),
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                        childAspectRatio: 3 / 3.5,
-                      ),
                       itemCount: favoriteList.length,
                       itemBuilder: (context, index) {
                         final item = favoriteList[index];
 
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              height: 110,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFEDE6FF),
-                                borderRadius: BorderRadius.circular(16),
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF5F5F5),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Row(
+                            children: [
+                              // Image Placeholder dengan margin kiri 5px
+                              Padding(
+                                padding: const EdgeInsets.only(left: 5),
+                                child: Container(
+                                  width: 60,
+                                  height: 60,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFE0E0E0),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: const Icon(
+                                    Icons.restaurant,
+                                    color: Colors.grey,
+                                    size: 30,
+                                  ),
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              item['title'],
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
+                              const SizedBox(width: 12),
+                              // Text Info
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      item['title'],
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      item['store'],
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                    Text(
+                                      item['price'],
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                            Text(
-                              item['price'],
-                              style: const TextStyle(
-                                fontSize: 11,
-                                color: Colors.grey,
+                              // Favorite Icon dengan margin kanan 5px
+                              const Padding(
+                                padding: EdgeInsets.only(right: 5),
+                                child: Icon(
+                                  Icons.favorite,
+                                  color: Colors.red,
+                                  size: 24,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         );
                       },
                     ),

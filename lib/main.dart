@@ -11,6 +11,7 @@ import 'pages/home_page.dart';
 import 'package:flutter/material.dart';
 import 'pages/favorites_page.dart';
 import 'pages/food_detail_page.dart';
+import 'pages/form_update_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -43,7 +44,7 @@ class MyApp extends StatelessWidget {
         // tested with just a hot reload.
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      initialRoute: '/favorites',
+      initialRoute: '/form',
       // home: const LoginPage(),
       routes: {
         '/': (context) => const LoginPage(),
@@ -56,6 +57,7 @@ class MyApp extends StatelessWidget {
         '/profile' : (context) => const ProfilePage(username: 'saga', phoneNumber: '08943475832'),
         '/favorites' : (context) => const FavoritePage(username: 's', phoneNumber: 'phoneNumber'),
         '/food' : (context) => const FoodDetailPage(name: 'Nasi Kebuli', image: '', price: 'Rp 12.000', description: 'Makanan Gacor'),
+        '/form' : (context) => const FormUpdatePage(username: 'username', phoneNumber: 'phoneNumber'),
       }
     );
   }
