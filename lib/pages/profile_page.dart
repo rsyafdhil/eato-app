@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'riwayat_transaksi_page.dart';
+import 'home_page.dart';
 
 class ProfilePage extends StatelessWidget {
   final String username;
@@ -14,20 +16,17 @@ class ProfilePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-
-      // ========= BODY =========
       body: SafeArea(
         child: Column(
           children: [
             const SizedBox(height: 50),
 
-            // ========= HEADER PROFIL =========
+            // HEADER
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // FOTO / AVATAR
                   const CircleAvatar(
                     radius: 45,
                     backgroundColor: Color(0xFFD9D9D9),
@@ -37,10 +36,7 @@ class ProfilePage extends StatelessWidget {
                       color: Colors.white,
                     ),
                   ),
-
                   const SizedBox(width: 22),
-
-                  // NAMA + NOMOR HP
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -53,9 +49,7 @@ class ProfilePage extends StatelessWidget {
                               fontWeight: FontWeight.w700,
                             ),
                           ),
-
                           const SizedBox(width: 8),
-
                           const Icon(
                             Icons.edit,
                             size: 20,
@@ -63,9 +57,7 @@ class ProfilePage extends StatelessWidget {
                           ),
                         ],
                       ),
-
                       const SizedBox(height: 6),
-
                       Text(
                         phoneNumber,
                         style: const TextStyle(
@@ -81,7 +73,6 @@ class ProfilePage extends StatelessWidget {
 
             const SizedBox(height: 55),
 
-            // ========= USER INFORMATION TITLE =========
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 24),
               child: Align(
@@ -98,7 +89,6 @@ class ProfilePage extends StatelessWidget {
 
             const SizedBox(height: 16),
 
-            // ========= CARD MENU =========
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Container(
@@ -125,7 +115,7 @@ class ProfilePage extends StatelessWidget {
 
             const Spacer(),
 
-            // ========= BOTTOM NAV =========
+            // ====================== BOTTOM NAV ======================
             Container(
               height: 60,
               decoration: const BoxDecoration(
@@ -134,10 +124,28 @@ class ProfilePage extends StatelessWidget {
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: const [
-                  _BottomNavItem(icon: Icons.home, label: "Home", index: 0),
-                  _BottomNavItem(icon: Icons.receipt_long, label: "Riwayat", index: 1),
-                  _BottomNavItem(icon: Icons.person, label: "Profil", index: 2),
+                children: [
+                  _BottomNavItem(
+                    icon: Icons.home,
+                    label: "Home",
+                    index: 0,
+                    username: username,
+                    phoneNumber: phoneNumber,
+                  ),
+                  _BottomNavItem(
+                    icon: Icons.receipt_long,
+                    label: "Riwayat",
+                    index: 1,
+                    username: username,
+                    phoneNumber: phoneNumber,
+                  ),
+                  _BottomNavItem(
+                    icon: Icons.person,
+                    label: "Profil",
+                    index: 2,
+                    username: username,
+                    phoneNumber: phoneNumber,
+                  ),
                 ],
               ),
             ),
@@ -147,7 +155,6 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  // ========= ITEM MENU =========
   Widget _menuItem(IconData icon, String title, {bool isLogout = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -179,7 +186,6 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  // ========= DIVIDER =========
   Widget _divider() {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -191,39 +197,67 @@ class ProfilePage extends StatelessWidget {
   }
 }
 
-// ========= BOTTOM NAV ITEM =========
 class _BottomNavItem extends StatelessWidget {
   final IconData icon;
   final String label;
   final int index;
+  final String username;
+  final String phoneNumber;
 
   const _BottomNavItem({
     required this.icon,
     required this.label,
     required this.index,
+    required this.username,
+    required this.phoneNumber,
   });
 
   @override
   Widget build(BuildContext context) {
-    final bool isActive = index == 2;
+    bool isActive = index == 2;
 
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(
-          icon,
-          size: 22,
-          color: isActive ? const Color(0xFF635BFF) : Colors.grey,
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
+    return GestureDetector(
+      onTap: () {
+        if (index == 0) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => HomePage(
+                username: username,
+                phoneNumber: phoneNumber,
+              ),
+            ),
+          );
+        } else if (index == 1) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => RiwayatTransaksiPage(
+                username: username,
+                phoneNumber: phoneNumber,
+              ),
+            ),
+          );
+        }
+      },
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            icon,
+            size: 22,
             color: isActive ? const Color(0xFF635BFF) : Colors.grey,
           ),
-        ),
-      ],
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              color: isActive ? const Color(0xFF635BFF) : Colors.grey,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

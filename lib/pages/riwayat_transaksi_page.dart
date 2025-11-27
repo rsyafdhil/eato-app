@@ -1,7 +1,16 @@
 import 'package:flutter/material.dart';
+import 'profile_page.dart';
+import 'home_page.dart';
 
 class RiwayatTransaksiPage extends StatelessWidget {
-  const RiwayatTransaksiPage({super.key});
+  final String username;
+  final String phoneNumber;
+
+  const RiwayatTransaksiPage({
+    super.key,
+    required this.username,
+    required this.phoneNumber,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +46,6 @@ class RiwayatTransaksiPage extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            // Judul
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
               child: Align(
@@ -55,11 +63,9 @@ class RiwayatTransaksiPage extends StatelessWidget {
 
             const SizedBox(height: 8),
 
-            // List riwayat
             Expanded(
               child: ListView.builder(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 itemCount: riwayatDummy.length,
                 itemBuilder: (context, index) {
                   final item = riwayatDummy[index];
@@ -78,7 +84,11 @@ class RiwayatTransaksiPage extends StatelessWidget {
               ),
             ),
 
-            _BottomNavBar(currentIndex: 1),
+            _BottomNavBar(
+              currentIndex: 1,
+              username: username,
+              phoneNumber: phoneNumber,
+            ),
           ],
         ),
       ),
@@ -111,7 +121,6 @@ class _RiwayatCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            // ignore: deprecated_member_use
             color: Colors.black.withOpacity(0.03),
             blurRadius: 8,
             offset: const Offset(0, 4),
@@ -121,7 +130,6 @@ class _RiwayatCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Tanggal + status
           Padding(
             padding:
                 const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
@@ -155,13 +163,11 @@ class _RiwayatCard extends StatelessWidget {
             ),
           ),
 
-          // Isi card
           Padding(
             padding:
                 const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
             child: Row(
               children: [
-                // Placeholder gambar
                 Container(
                   width: 60,
                   height: 60,
@@ -171,7 +177,6 @@ class _RiwayatCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                // Detail teks
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -224,34 +229,70 @@ class _RiwayatCard extends StatelessWidget {
 }
 
 class _BottomNavBar extends StatelessWidget {
-  final int currentIndex; // 0: Home, 1: Riwayat, 2: Profil
-  const _BottomNavBar({required this.currentIndex});
+  final int currentIndex; 
+  final String username;
+  final String phoneNumber;
+
+  const _BottomNavBar({
+    required this.currentIndex,
+    required this.username,
+    required this.phoneNumber,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       height: 60,
-      decoration: BoxDecoration(
-        color: const Color(0xFFF2EAFE),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      decoration: const BoxDecoration(
+        color: Color(0xFFF2EAFE),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
+          
+          // HOME
           _BottomNavItem(
             icon: Icons.home,
             label: "Home",
             isActive: currentIndex == 0,
+            onTap: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => HomePage(
+                    username: username,
+                    phoneNumber: phoneNumber,
+                  ),
+                ),
+              );
+            },
           ),
+
+          // RIWAYAT
           _BottomNavItem(
             icon: Icons.receipt_long,
             label: "Riwayat",
             isActive: currentIndex == 1,
+            onTap: () {},
           ),
+
+          // PROFILE
           _BottomNavItem(
             icon: Icons.person,
             label: "Profil",
             isActive: currentIndex == 2,
+            onTap: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ProfilePage(
+                    username: username,
+                    phoneNumber: phoneNumber,
+                  ),
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -263,32 +304,37 @@ class _BottomNavItem extends StatelessWidget {
   final IconData icon;
   final String label;
   final bool isActive;
+  final VoidCallback onTap;
 
   const _BottomNavItem({
     required this.icon,
     required this.label,
     required this.isActive,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(
-          icon,
-          size: 22,
-          color: isActive ? const Color(0xFF635BFF) : Colors.grey,
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            icon,
+            size: 22,
             color: isActive ? const Color(0xFF635BFF) : Colors.grey,
           ),
-        ),
-      ],
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              color: isActive ? const Color(0xFF635BFF) : Colors.grey,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
