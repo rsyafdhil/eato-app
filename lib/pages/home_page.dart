@@ -5,6 +5,7 @@ import 'profile_page.dart';
 import 'riwayat_transaksi_page.dart';
 import '../services/api_services.dart';
 import 'food_detail_page.dart';
+import 'favorites_page.dart';
 
 class HomePage extends StatefulWidget {
   final String username;
@@ -81,25 +82,50 @@ class _HomePageState extends State<HomePage> {
           children: [
             const SizedBox(height: 84),
 
-            /// Header username + icon
-            Padding(
-              padding: const EdgeInsets.fromLTRB(28, 0, 28, 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      "Hello 👋, ${widget.username}!",
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  /// Header username + icon
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(28, 0, 28, 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            "Hello 👋, ${widget.username}!",
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        // Make favorite icon clickable
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => FavoritePage(
+                                  username: widget.username,
+                                  phoneNumber: widget.phoneNumber,
+                                ),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF2EAFE),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.favorite_border,
+                              size: 24,
+                              color: Color(0xFF635BFF),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  const Icon(Icons.favorite_border, size: 24),
-                ],
-              ),
-            ),
+),
 
             /// Search Bar
             Padding(
@@ -162,7 +188,10 @@ class _HomePageState extends State<HomePage> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => const KantinPage(),
+                                  builder: (_) => KantinPage(
+                                    username: widget.username,
+                                    phoneNumber: widget.phoneNumber,
+                                  ),
                                 ),
                               );
                             },
@@ -217,6 +246,8 @@ class _HomePageState extends State<HomePage> {
                                         builder: (_) => PreviewTokoPage(
                                           namaToko: nama,
                                           tenantId: tenantId,
+                                          username: widget.username,
+                                          phoneNumber: widget.phoneNumber,
                                         ),
                                       ),
                                     );

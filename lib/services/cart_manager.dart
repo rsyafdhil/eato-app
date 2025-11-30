@@ -20,7 +20,7 @@ class FavoriteItem {
   final String id;
   final String title;
   final String price;
-  final DateTime addedAt;
+  final DateTime addedAt; 
 
   FavoriteItem({
     required this.id,

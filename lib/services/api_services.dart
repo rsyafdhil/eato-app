@@ -276,4 +276,95 @@ class ApiService {
       return null;
     }
   }
+
+  static Future<void> addToFavorites(String userId, int itemId) async {
+  try {
+    final url = '$baseUrl/favorites';
+    final body = {
+      'user_id': userId,
+      'item_id': itemId,
+    };
+    
+    print('=== ADD TO FAVORITES DEBUG ===');
+    print('URL: $url');
+    print('Body: ${json.encode(body)}');
+    print('userId: $userId (type: ${userId.runtimeType})');
+    print('itemId: $itemId (type: ${itemId.runtimeType})');
+    
+    final response = await http.post(
+      Uri.parse(url),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: json.encode(body),
+    );
+
+    print('Response Status: ${response.statusCode}');
+    print('Response Body: ${response.body}');
+    print('Response Headers: ${response.headers}');
+    print('=== END DEBUG ===');
+
+    if (response.statusCode == 201 || response.statusCode == 200) {
+      return;
+    } else {
+      final errorBody = json.decode(response.body);
+      throw Exception('Server error: ${errorBody}');
+    }
+    } catch (e) {
+    print('EXCEPTION in addToFavorites: $e');
+    rethrow;
+    }
+  }
+  // Add these methods right after addToFavorites method
+
+// Get user's favorites
+static Future<List<dynamic>> getFavorites(String userId) async {
+  try {
+    print('Getting favorites for user: $userId');
+    final response = await http.get(
+      Uri.parse('$baseUrl/favorites/$userId'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+    );
+
+    print('Get favorites status: ${response.statusCode}');
+    print('Get favorites body: ${response.body}');
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to load favorites');
+    }
+  } catch (e) {
+    print('Error getting favorites: $e');
+    throw Exception('Error getting favorites: $e');
+  }
+}
+
+// Remove from favorites
+static Future<void> removeFromFavorites(String userId, int itemId) async {
+  try {
+    print('Removing favorite - userId: $userId, itemId: $itemId');
+    final response = await http.delete(
+      Uri.parse('$baseUrl/favorites/$userId/$itemId'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+    );
+
+    print('Remove favorite status: ${response.statusCode}');
+    print('Remove favorite body: ${response.body}');
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to remove from favorites');
+    }
+  } catch (e) {
+    print('Error removing from favorites: $e');
+    throw Exception('Error removing from favorites: $e');
+  }
+}
 }

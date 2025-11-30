@@ -3,15 +3,20 @@ import '../services/api_services.dart';
 import '../services/cart_manager.dart';
 import 'food_detail_page.dart';
 import 'checkout_page.dart';
+import 'favorites_page.dart';
 
 class PreviewTokoPage extends StatefulWidget {
   final int tenantId;
   final String namaToko;
+  final String username;
+  final String phoneNumber;
 
   const PreviewTokoPage({
     super.key,
     required this.tenantId,
     required this.namaToko,
+    required this.username,
+    required this.phoneNumber,
   });
 
   @override
@@ -489,190 +494,224 @@ class _PreviewTokoPageState extends State<PreviewTokoPage> {
     );
   }
 
-  Widget _buildMenuItem(Map<String, dynamic> item) {
-    final imageUrl = item['preview_image']?.toString();
-    final int itemId = int.parse(item['id'].toString());
-    final String itemIdStr = item['id'].toString();
-    final String itemName = item['item_name']?.toString() ?? 'Unknown';
-    final String price = item['price']?.toString() ?? '0';
-      
-    return InkWell(
-      onTap: () {
-        // GO TO FOOD DETAIL
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => FoodDetailPage(itemId: itemId),
-          ),
-        ).then((_) {
-          // Refresh when returning from detail page
-          setState(() {});
-        });
-      },
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey.shade200),
+Widget _buildMenuItem(Map<String, dynamic> item) {
+  final imageUrl = item['preview_image']?.toString();
+  final int itemId = int.parse(item['id'].toString());
+  final String itemIdStr = item['id'].toString();
+  final String itemName = item['item_name']?.toString() ?? 'Unknown';
+  final String price = item['price']?.toString() ?? '0';
+    
+  return InkWell(
+    onTap: () {
+      // GO TO FOOD DETAIL
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => FoodDetailPage(itemId: itemId),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // IMAGE
-            Stack(
-              children: [
-                Container(
-                  height: 110,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEDE6FF),
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(16),
-                    ),
-                    image: imageUrl != null && imageUrl.isNotEmpty
-                        ? DecorationImage(
-                            image: NetworkImage(imageUrl),
-                            fit: BoxFit.cover,
-                          )
-                        : null,
+      ).then((_) {
+        // Refresh when returning from detail page
+        setState(() {});
+      });
+    },
+    borderRadius: BorderRadius.circular(16),
+    child: Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // IMAGE
+          Stack(
+            children: [
+              Container(
+                height: 110,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEDE6FF),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(16),
                   ),
-                  child: (imageUrl == null || imageUrl.isEmpty)
-                      ? const Center(
-                          child: Icon(
-                            Icons.fastfood,
-                            size: 40,
-                            color: Colors.grey,
-                          ),
+                  image: imageUrl != null && imageUrl.isNotEmpty
+                      ? DecorationImage(
+                          image: NetworkImage(imageUrl),
+                          fit: BoxFit.cover,
                         )
                       : null,
                 ),
+                child: (imageUrl == null || imageUrl.isEmpty)
+                    ? const Center(
+                        child: Icon(
+                          Icons.fastfood,
+                          size: 40,
+                          color: Colors.grey,
+                        ),
+                      )
+                    : null,
+              ),
+              // FAVORITE BUTTON
+        Positioned(
+          top: 8,
+          right: 8,
+          child: FutureBuilder<List<dynamic>>(
+            future: ApiService.getFavorites(widget.phoneNumber),
+            builder: (context, snapshot) {
+              final isFav = snapshot.hasData &&
+                  snapshot.data!.any((fav) => fav['id'].toString() == itemIdStr);
 
-                // FAVORITE BUTTON
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _cartManager.toggleFavorite(itemIdStr, itemName, price);
-                      });
+              return GestureDetector(
+                onTap: () async {
+                  try {
+                    if (isFav) {
+                      await ApiService.removeFromFavorites(
+                        widget.phoneNumber,
+                        itemId,
+                      );
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Dihapus dari favorit'),
+                          duration: Duration(seconds: 1),
+                        ),
+                      );
+                    } else {
+                      await ApiService.addToFavorites(
+                        widget.phoneNumber,
+                        itemId,
+                      );
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text('Ditambahkan ke favorit'),
+                          duration: const Duration(seconds: 1),
+                          action: SnackBarAction(
+                            label: 'Lihat',
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => FavoritePage(
+                                    username: widget.username,
+                                    phoneNumber: widget.phoneNumber,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      );
+                    }
+                    setState(() {}); // Refresh UI
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error: $e')),
+                    );
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    isFav ? Icons.favorite : Icons.favorite_border,
+                    size: 18,
+                    color: const Color(0xFF635BFF),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+  ),
+
+          // INFO
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  itemName,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+
+                const SizedBox(height: 2),
+
+                Text(
+                  'Rp $price',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF635BFF),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+
+                const SizedBox(height: 8),
+
+                // ADD TO CART BUTTON
+                SizedBox(
+                  width: double.infinity,
+                  height: 32,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      _cartManager.addToCart(itemIdStr, itemName, price);
+                      setState(() {}); // Refresh to update cart count
                       
-                      final isFav = _cartManager.isFavorite(itemIdStr);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            isFav 
-                                ? 'Ditambahkan ke favorit' 
-                                : 'Dihapus dari favorit'
+                            '$itemName ditambahkan ke keranjang!',
                           ),
                           duration: const Duration(seconds: 1),
+                          action: SnackBarAction(
+                            label: 'Lihat',
+                            textColor: Colors.white,
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const CheckoutPage(),
+                                ),
+                              ).then((_) => setState(() {}));
+                            },
+                          ),
                         ),
                       );
                     },
-                    child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF635BFF),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Icon(
-                        _cartManager.isFavorite(itemIdStr)
-                            ? Icons.favorite
-                            : Icons.favorite_border,
-                        size: 18,
-                        color: const Color(0xFF635BFF),
+                      padding: EdgeInsets.zero,
+                    ),
+                    child: const Text(
+                      'Add to Cart',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
                       ),
                     ),
                   ),
                 ),
               ],
             ),
-
-            // INFO
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    itemName,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-
-                  const SizedBox(height: 2),
-
-                  Text(
-                    'Rp $price',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFF635BFF),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  // ADD TO CART BUTTON
-                  SizedBox(
-                    width: double.infinity,
-                    height: 32,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        _cartManager.addToCart(itemIdStr, itemName, price);
-                        setState(() {}); // Refresh to update cart count
-                        
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              '$itemName ditambahkan ke keranjang!',
-                            ),
-                            duration: const Duration(seconds: 1),
-                            action: SnackBarAction(
-                              label: 'Lihat',
-                              textColor: Colors.white,
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => const CheckoutPage(),
-                                  ),
-                                ).then((_) => setState(() {}));
-                              },
-                            ),
-                          ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF635BFF),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: EdgeInsets.zero,
-                      ),
-                      child: const Text(
-                        'Add to Cart',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 class _BottomNavItem extends StatelessWidget {

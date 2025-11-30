@@ -3,7 +3,14 @@ import '../services/api_services.dart';
 import 'preview_toko_page.dart';
 
 class KantinPage extends StatefulWidget {
-  const KantinPage({super.key});
+  final String username;
+  final String phoneNumber;
+
+  const KantinPage({
+    super.key,
+    required this.username,
+    required this.phoneNumber,
+  });
 
   @override
   State<KantinPage> createState() => _KantinPageState();
@@ -115,6 +122,8 @@ class _KantinPageState extends State<KantinPage> {
                               id: kantin['id'],
                               namaKantin: kantin['name'] ?? 'Unknown',
                               previewImage: kantin['preview_image'],
+                              username: widget.username,  // Added
+                              phoneNumber: widget.phoneNumber,  // Added
                             );
                           },
                         ),
@@ -163,11 +172,15 @@ class _KantinCard extends StatelessWidget {
   final int id;
   final String namaKantin;
   final String? previewImage;
+  final String username;  // Added
+  final String phoneNumber;  // Added
 
   const _KantinCard({
     required this.id,
     required this.namaKantin,
     this.previewImage,
+    required this.username,  // Added
+    required this.phoneNumber,  // Added
   });
 
   @override
@@ -180,6 +193,8 @@ class _KantinCard extends StatelessWidget {
             builder: (_) => PreviewTokoPage(
               tenantId: id,
               namaToko: namaKantin,
+              username: username,  // Added
+              phoneNumber: phoneNumber,  // Added
             ),
           ),
         );
