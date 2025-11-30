@@ -1,11 +1,17 @@
+import 'package:eato_app/pages/kantin_page.dart';
+import 'package:eato_app/pages/profile_page.dart';
 import 'package:flutter/material.dart';
 import 'pages/checkout_page.dart';
 import 'pages/riwayat_transaksi_page.dart';
 import 'pages/kantin_page.dart';
 import 'pages/register_page.dart';
 import 'pages/login_page.dart';
-import 'pages/checkout_page.dart';
-import 'pages/kantin_page.dart';
+import 'pages/preview_toko_page.dart';
+import 'pages/home_page.dart';
+import 'package:flutter/material.dart';
+import 'pages/favorites_page.dart';
+import 'pages/food_detail_page.dart';
+import 'pages/form_update_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -45,7 +51,14 @@ class MyApp extends StatelessWidget {
         '/register': (context) => const RegisterPage(title: "EatO"),
         '/home': (context) => const MyHomePage(),
         '/daftar_kantin': (context) => const KantinPage(),
-      },
+        '/checkout' : (context) => const CheckoutPage(),
+        '/homepage' : (context) => const HomePage(username: 'username', phoneNumber: 'phoneNumber'),
+        '/preview' : (context) => const PreviewTokoPage(namaToko: 'Gacor', tenantId: 1,),
+        '/profile' : (context) => const ProfilePage(username: 'saga', phoneNumber: '08943475832'),
+        '/favorites' : (context) => const FavoritePage(username: 's', phoneNumber: 'phoneNumber'),
+        '/food' : (context) => const FoodDetailPage(name: 'Nasi Kebuli', image: '', price: 'Rp 12.000', description: 'Makanan Gacor'),
+        '/form' : (context) => const FormUpdatePage(username: 'username', phoneNumber: 'phoneNumber'),
+      }
     );
   }
 }

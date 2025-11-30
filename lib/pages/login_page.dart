@@ -1,11 +1,7 @@
-import 'dart:convert';
-import 'dart:io';
-
-import '../services/api_services.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../services/api_services.dart';
 import 'register_page.dart';
-import 'package:http/http.dart' as http;
+import 'home_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -21,31 +17,59 @@ class _LoginPageState extends State<LoginPage> {
   bool isLoading = false;
 
   Future<void> login() async {
-    final response = await http.post(
-      Uri.parse("http://localhost:8000/api/login"), // ganti sesuai API kamu
-      body: {
-        'email': emailController.text,
-        'password': passwordController.text,
-      },
-    );
+    // Validate input
+    if (emailController.text.isEmpty || passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill in all fields')),
+      );
+      return;
+    }
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
+    setState(() {
+      isLoading = true;
+    });
 
-      // Contoh format respons Laravel:
-      // { "success": true, "message": "Login berhasil" }
+    try {
+      final result = await ApiService.login(
+        emailController.text.trim(),
+        passwordController.text,
+      );
 
-      if (data['success'] == true) {
-        // 👉 Pindah ke halaman daftar_kantin
-        Navigator.pushNamed(context, '/daftar_kantin');
+      setState(() {
+        isLoading = false;
+      });
+
+      if (result['success'] == true) {
+        // Get user data
+        final userData = result['data']['user'];
+        final username = userData['name'] ?? 'User';
+        final phoneNumber = userData['nomor_telefon'] ?? '';
+
+        // Navigate to home page
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => HomePage(
+              username: username,
+              phoneNumber: phoneNumber,
+            ),
+          ),
+        );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(data['message'] ?? 'Login gagal')),
+          SnackBar(
+            content: Text(result['message'] ?? 'Login failed'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
-    } else {
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+      });
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Terjadi kesalahan pada server')),
+        SnackBar(content: Text("Error: $e")),
       );
     }
   }
@@ -61,7 +85,6 @@ class _LoginPageState extends State<LoginPage> {
             children: [
               const SizedBox(height: 60),
 
-              // APP TITLE
               const Text(
                 "EatO",
                 style: TextStyle(fontSize: 42, fontWeight: FontWeight.bold),
@@ -69,16 +92,15 @@ class _LoginPageState extends State<LoginPage> {
 
               const SizedBox(height: 60),
 
-              // Username label
               const Align(
                 alignment: Alignment.centerLeft,
                 child: Text("Email", style: TextStyle(fontSize: 14)),
               ),
               const SizedBox(height: 6),
 
-              // Username TextField
               TextField(
                 controller: emailController,
+                keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
                   hintText: "email",
                   border: OutlineInputBorder(
@@ -89,14 +111,12 @@ class _LoginPageState extends State<LoginPage> {
 
               const SizedBox(height: 20),
 
-              // Password label
               const Align(
                 alignment: Alignment.centerLeft,
                 child: Text("Password", style: TextStyle(fontSize: 14)),
               ),
               const SizedBox(height: 6),
 
-              // Password field
               TextField(
                 controller: passwordController,
                 obscureText: true,
@@ -110,7 +130,6 @@ class _LoginPageState extends State<LoginPage> {
 
               const SizedBox(height: 10),
 
-              // Forgot password
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
@@ -123,29 +142,31 @@ class _LoginPageState extends State<LoginPage> {
               ),
 
               const SizedBox(height: 10),
-
-              // Sign In Button
+              
               SizedBox(
                 width: double.infinity,
                 height: 55,
                 child: ElevatedButton(
-                  onPressed: login,
+                  onPressed: isLoading ? null : login,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF6A5CFF), // Purple button
+                    backgroundColor: const Color(0xFF6A5CFF),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
                     ),
                   ),
-                  child: const Text(
-                    "Sign In",
-                    style: TextStyle(fontSize: 18, color: Colors.white),
-                  ),
+                  child: isLoading
+                      ? const CircularProgressIndicator(
+                          color: Colors.white,
+                        )
+                      : const Text(
+                          "Sign In",
+                          style: TextStyle(fontSize: 18, color: Colors.white),
+                        ),
                 ),
               ),
 
               const SizedBox(height: 20),
 
-              // Sign Up link
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -158,8 +179,7 @@ class _LoginPageState extends State<LoginPage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) =>
-                              const RegisterPage(title: "EatO"),
+                          builder: (context) => const RegisterPage(title: "EatO"),
                         ),
                       );
                     },
