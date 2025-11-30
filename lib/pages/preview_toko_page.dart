@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../services/api_services.dart';
+import '../services/cart_manager.dart';
+import 'food_detail_page.dart';
+import 'checkout_page.dart';
 
 class PreviewTokoPage extends StatefulWidget {
   final int tenantId;
@@ -23,6 +26,8 @@ class _PreviewTokoPageState extends State<PreviewTokoPage> {
   List<dynamic> menuToShow = [];
   Map<String, dynamic>? tenantData;
   String? errorMessage;
+  
+  final CartManager _cartManager = CartManager();
 
   @override
   void initState() {
@@ -39,11 +44,9 @@ class _PreviewTokoPageState extends State<PreviewTokoPage> {
     try {
       print('Loading tenant ID: ${widget.tenantId}');
       
-      // Load tenant details
       final tenant = await ApiService.getTenantById(widget.tenantId);
       print('Tenant data: $tenant');
       
-      // Load items
       final items = await ApiService.getItemsByTenant(widget.tenantId);
       print('Items count: ${items.length}');
       print('Items data: $items');
@@ -77,6 +80,7 @@ class _PreviewTokoPageState extends State<PreviewTokoPage> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
+    final cartItemCount = _cartManager.getTotalItems();
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -125,7 +129,7 @@ class _PreviewTokoPageState extends State<PreviewTokoPage> {
                           ),
                         ),
                       ),
-                      // BACK
+                      // BACK BUTTON
                       Positioned(
                         top: 12,
                         left: 12,
@@ -195,9 +199,9 @@ class _PreviewTokoPageState extends State<PreviewTokoPage> {
                                       color: Colors.red,
                                     ),
                                     const SizedBox(height: 16),
-                                    Text(
+                                    const Text(
                                       'Failed to load data',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 18,
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -330,9 +334,25 @@ class _PreviewTokoPageState extends State<PreviewTokoPage> {
               child: Center(
                 child: GestureDetector(
                   onTap: () {
-                    setState(() {
-                      _selectedIndex = 1;
-                    });
+                    if (cartItemCount > 0) {
+                      // Navigate to checkout page
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const CheckoutPage(),
+                        ),
+                      ).then((_) {
+                        // Refresh the page when returning from checkout
+                        setState(() {});
+                      });
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Keranjang masih kosong!'),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    }
                   },
                   child: Container(
                     padding: const EdgeInsets.symmetric(
@@ -352,16 +372,49 @@ class _PreviewTokoPageState extends State<PreviewTokoPage> {
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Icon(
-                          Icons.shopping_cart,
-                          color: Colors.white,
-                          size: 20,
+                      children: [
+                        Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            const Icon(
+                              Icons.shopping_cart,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                            // Badge for cart count
+                            if (cartItemCount > 0)
+                              Positioned(
+                                right: -8,
+                                top: -8,
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.red,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  constraints: const BoxConstraints(
+                                    minWidth: 18,
+                                    minHeight: 18,
+                                  ),
+                                  child: Text(
+                                    cartItemCount.toString(),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Text(
-                          'Keranjang',
-                          style: TextStyle(
+                          cartItemCount > 0 
+                              ? 'Keranjang ($cartItemCount)'
+                              : 'Keranjang',
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -438,145 +491,185 @@ class _PreviewTokoPageState extends State<PreviewTokoPage> {
 
   Widget _buildMenuItem(Map<String, dynamic> item) {
     final imageUrl = item['preview_image']?.toString();
-    final itemId = item['id'];
-    
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Image with favorite button
-          Stack(
-            children: [
-              Container(
-                height: 110,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEDE6FF),
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(16),
+    final int itemId = int.parse(item['id'].toString());
+    final String itemIdStr = item['id'].toString();
+    final String itemName = item['item_name']?.toString() ?? 'Unknown';
+    final String price = item['price']?.toString() ?? '0';
+      
+    return InkWell(
+      onTap: () {
+        // GO TO FOOD DETAIL
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => FoodDetailPage(itemId: itemId),
+          ),
+        ).then((_) {
+          // Refresh when returning from detail page
+          setState(() {});
+        });
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // IMAGE
+            Stack(
+              children: [
+                Container(
+                  height: 110,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEDE6FF),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(16),
+                    ),
+                    image: imageUrl != null && imageUrl.isNotEmpty
+                        ? DecorationImage(
+                            image: NetworkImage(imageUrl),
+                            fit: BoxFit.cover,
+                          )
+                        : null,
                   ),
-                  image: imageUrl != null && imageUrl.isNotEmpty
-                      ? DecorationImage(
-                          image: NetworkImage(imageUrl),
-                          fit: BoxFit.cover,
-                          onError: (error, stackTrace) {
-                            print('Error loading item image: $error');
-                          },
+                  child: (imageUrl == null || imageUrl.isEmpty)
+                      ? const Center(
+                          child: Icon(
+                            Icons.fastfood,
+                            size: 40,
+                            color: Colors.grey,
+                          ),
                         )
                       : null,
                 ),
-                child: imageUrl == null || imageUrl.isEmpty
-                    ? const Center(
-                        child: Icon(
-                          Icons.fastfood,
-                          size: 40,
-                          color: Colors.grey,
-                        ),
-                      )
-                    : null,
-              ),
-              // Favorite button
-              Positioned(
-                top: 8,
-                right: 8,
-                child: GestureDetector(
-                  onTap: () {
-                    // Toggle favorite
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Added to favorites!'),
-                        duration: const Duration(seconds: 1),
-                      ),
-                    );
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 4,
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.favorite_border,
-                      size: 18,
-                      color: Color(0xFF635BFF),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          
-          // Item details
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item['item_name']?.toString() ?? 'Unknown',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Rp ${item['price']?.toString() ?? '0'}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF635BFF),
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                
-                // Add to Cart button
-                SizedBox(
-                  width: double.infinity,
-                  height: 32,
-                  child: ElevatedButton(
-                    onPressed: () {
+
+                // FAVORITE BUTTON
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _cartManager.toggleFavorite(itemIdStr, itemName, price);
+                      });
+                      
+                      final isFav = _cartManager.isFavorite(itemIdStr);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('${item['item_name']} added to cart!'),
+                          content: Text(
+                            isFav 
+                                ? 'Ditambahkan ke favorit' 
+                                : 'Dihapus dari favorit'
+                          ),
                           duration: const Duration(seconds: 1),
                         ),
                       );
                     },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF635BFF),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
                       ),
-                      padding: EdgeInsets.zero,
-                    ),
-                    child: const Text(
-                      'Add to Cart',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
+                      child: Icon(
+                        _cartManager.isFavorite(itemIdStr)
+                            ? Icons.favorite
+                            : Icons.favorite_border,
+                        size: 18,
+                        color: const Color(0xFF635BFF),
                       ),
                     ),
                   ),
                 ),
               ],
             ),
-          ),
-        ],
+
+            // INFO
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    itemName,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+
+                  const SizedBox(height: 2),
+
+                  Text(
+                    'Rp $price',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF635BFF),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  // ADD TO CART BUTTON
+                  SizedBox(
+                    width: double.infinity,
+                    height: 32,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        _cartManager.addToCart(itemIdStr, itemName, price);
+                        setState(() {}); // Refresh to update cart count
+                        
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              '$itemName ditambahkan ke keranjang!',
+                            ),
+                            duration: const Duration(seconds: 1),
+                            action: SnackBarAction(
+                              label: 'Lihat',
+                              textColor: Colors.white,
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const CheckoutPage(),
+                                  ),
+                                ).then((_) => setState(() {}));
+                              },
+                            ),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF635BFF),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        padding: EdgeInsets.zero,
+                      ),
+                      child: const Text(
+                        'Add to Cart',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
