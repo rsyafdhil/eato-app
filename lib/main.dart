@@ -56,7 +56,7 @@ class MyApp extends StatelessWidget {
         '/preview' : (context) => const PreviewTokoPage(namaToko: 'Gacor', tenantId: 1,),
         '/profile' : (context) => const ProfilePage(username: 'saga', phoneNumber: '08943475832'),
         '/favorites' : (context) => const FavoritePage(username: 's', phoneNumber: 'phoneNumber'),
-        '/food' : (context) => const FoodDetailPage(name: 'Nasi Kebuli', image: '', price: 'Rp 12.000', description: 'Makanan Gacor'),
+        '/food' : (context) => const FoodDetailPage(itemId: 1,),
         '/form' : (context) => const FormUpdatePage(username: 'username', phoneNumber: 'phoneNumber'),
       }
     );

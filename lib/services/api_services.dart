@@ -204,18 +204,30 @@ class ApiService {
 
   static Future<Map<String, dynamic>?> getItemById(int id) async {
     try {
+      print('>>> getItemById($id): Making request to $baseUrl/items/$id');
+      print('>>> getItemById($id): Headers = ${_getHeaders()}');
+      
       final response = await http.get(
         Uri.parse("$baseUrl/items/$id"),
         headers: _getHeaders(),
       );
 
+      print('>>> getItemById($id): Status Code = ${response.statusCode}');
+      print('>>> getItemById($id): Response Body = ${response.body}');
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        print('>>> getItemById($id): Decoded data = $data');
+        print('>>> getItemById($id): Returning data[\'data\'] = ${data['data']}');
         return data['data'];
+      } else {
+        print('>>> getItemById($id): ERROR - Status ${response.statusCode}');
+        print('>>> getItemById($id): ERROR Body = ${response.body}');
+        return null;
       }
-      return null;
-    } catch (e) {
-      print('Error fetching item: $e');
+    } catch (e, stackTrace) {
+      print('>>> getItemById($id): EXCEPTION = $e');
+      print('>>> getItemById($id): Stack trace = $stackTrace');
       return null;
     }
   }
