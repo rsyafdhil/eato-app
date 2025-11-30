@@ -1,7 +1,7 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import '../services/api_services.dart';
 import 'register_page.dart';
+import 'home_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -17,41 +17,55 @@ class _LoginPageState extends State<LoginPage> {
   bool isLoading = false;
 
   Future<void> login() async {
+    // Validate input
+    if (emailController.text.isEmpty || passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill in all fields')),
+      );
+      return;
+    }
+
     setState(() {
-      isLoading = true; 
+      isLoading = true;
     });
 
     try {
-      final response = await http.post(
-        Uri.parse("http://localhost:8000/api/login"),
-        body: {
-          'email': emailController.text,
-          'password': passwordController.text,
-        },
+      final result = await ApiService.login(
+        emailController.text.trim(),
+        passwordController.text,
       );
 
       setState(() {
-        isLoading = false; // ❗ HIDE LOADING (on finish)
+        isLoading = false;
       });
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+      if (result['success'] == true) {
+        // Get user data
+        final userData = result['data']['user'];
+        final username = userData['name'] ?? 'User';
+        final phoneNumber = userData['nomor_telefon'] ?? '';
 
-        if (data['success'] == true) {
-          Navigator.pushNamed(context, '/daftar_kantin');
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(data['message'] ?? 'Login gagal')),
-          );
-        }
+        // Navigate to home page
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => HomePage(
+              username: username,
+              phoneNumber: phoneNumber,
+            ),
+          ),
+        );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Terjadi kesalahan pada server')),
+          SnackBar(
+            content: Text(result['message'] ?? 'Login failed'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } catch (e) {
       setState(() {
-        isLoading = false; // ❗ Always hide loader on error
+        isLoading = false;
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -86,6 +100,7 @@ class _LoginPageState extends State<LoginPage> {
 
               TextField(
                 controller: emailController,
+                keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
                   hintText: "email",
                   border: OutlineInputBorder(
@@ -119,17 +134,20 @@ class _LoginPageState extends State<LoginPage> {
                 alignment: Alignment.centerRight,
                 child: TextButton(
                   onPressed: () {},
-                  child: const Text("Forgot Password?",
-                      style: TextStyle(color: Colors.grey)),
+                  child: const Text(
+                    "Forgot Password?",
+                    style: TextStyle(color: Colors.grey),
+                  ),
                 ),
               ),
 
               const SizedBox(height: 10),
+              
               SizedBox(
                 width: double.infinity,
                 height: 55,
                 child: ElevatedButton(
-                  onPressed: isLoading ? null : login, // disable when loading
+                  onPressed: isLoading ? null : login,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF6A5CFF),
                     shape: RoundedRectangleBorder(
@@ -142,8 +160,7 @@ class _LoginPageState extends State<LoginPage> {
                         )
                       : const Text(
                           "Sign In",
-                          style: TextStyle(
-                              fontSize: 18, color: Colors.white),
+                          style: TextStyle(fontSize: 18, color: Colors.white),
                         ),
                 ),
               ),
@@ -162,8 +179,7 @@ class _LoginPageState extends State<LoginPage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) =>
-                              const RegisterPage(title: "EatO"),
+                          builder: (context) => const RegisterPage(title: "EatO"),
                         ),
                       );
                     },

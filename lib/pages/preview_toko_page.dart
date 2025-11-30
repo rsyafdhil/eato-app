@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import '../services/api_services.dart';
 
 class PreviewTokoPage extends StatefulWidget {
+  final int tenantId;
   final String namaToko;
 
   const PreviewTokoPage({
     super.key,
+    required this.tenantId,
     required this.namaToko,
   });
 
@@ -13,27 +16,62 @@ class PreviewTokoPage extends StatefulWidget {
 }
 
 class _PreviewTokoPageState extends State<PreviewTokoPage> {
-  int _selectedIndex = 1; // keranjang aktif
-  bool _alreadyShowAll = false; // setelah true, tombol hilang
-
-  final List<_MenuItem> menuList = [
-    _MenuItem(title: 'Food 1', price: 'Price'),
-    _MenuItem(title: 'Food 2', price: 'Price'),
-    _MenuItem(title: 'Food 3', price: 'Price'),
-    _MenuItem(title: 'Food 4', price: 'Price'),
-    _MenuItem(title: 'Food 5', price: 'Price'),
-    _MenuItem(title: 'Food 6', price: 'Price'),
-    _MenuItem(title: 'Food 7', price: 'Price'),
-    _MenuItem(title: 'Food 8', price: 'Price'),
-  ];
-
-  late List<_MenuItem> menuToShow;
+  int _selectedIndex = 1;
+  bool _alreadyShowAll = false;
+  bool _isLoading = true;
+  List<dynamic> menuList = [];
+  List<dynamic> menuToShow = [];
+  Map<String, dynamic>? tenantData;
+  String? errorMessage;
 
   @override
   void initState() {
     super.initState();
-    // awal: cuma 4 menu
-    menuToShow = menuList.take(4).toList();
+    _loadTenantData();
+  }
+
+  Future<void> _loadTenantData() async {
+    setState(() {
+      _isLoading = true;
+      errorMessage = null;
+    });
+
+    try {
+      print('Loading tenant ID: ${widget.tenantId}');
+      
+      // Load tenant details
+      final tenant = await ApiService.getTenantById(widget.tenantId);
+      print('Tenant data: $tenant');
+      
+      // Load items
+      final items = await ApiService.getItemsByTenant(widget.tenantId);
+      print('Items count: ${items.length}');
+      print('Items data: $items');
+
+      if (!mounted) return;
+
+      setState(() {
+        tenantData = tenant;
+        menuList = items;
+        menuToShow = items.length > 4 ? items.take(4).toList() : items;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('Error loading data: $e');
+      if (!mounted) return;
+      
+      setState(() {
+        _isLoading = false;
+        errorMessage = e.toString();
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error loading data: $e'),
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    }
   }
 
   @override
@@ -45,7 +83,6 @@ class _PreviewTokoPageState extends State<PreviewTokoPage> {
       body: SafeArea(
         child: Stack(
           children: [
-            // === KONTEN UTAMA ===
             Column(
               children: [
                 // HEADER
@@ -55,8 +92,19 @@ class _PreviewTokoPageState extends State<PreviewTokoPage> {
                     children: [
                       Container(
                         width: double.infinity,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFEDE6FF),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEDE6FF),
+                          image: tenantData?['preview_image'] != null
+                              ? DecorationImage(
+                                  image: NetworkImage(
+                                    tenantData!['preview_image'],
+                                  ),
+                                  fit: BoxFit.cover,
+                                  onError: (error, stackTrace) {
+                                    print('Error loading image: $error');
+                                  },
+                                )
+                              : null,
                         ),
                       ),
                       Positioned.fill(
@@ -114,12 +162,14 @@ class _PreviewTokoPageState extends State<PreviewTokoPage> {
                               ),
                             ),
                             const SizedBox(height: 4),
-                            const Text(
-                              'Desc toko',
-                              style: TextStyle(
+                            Text(
+                              tenantData?['description']?.toString() ?? 'Desc toko',
+                              style: const TextStyle(
                                 fontSize: 12,
                                 color: Colors.white70,
                               ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ],
                         ),
@@ -130,121 +180,149 @@ class _PreviewTokoPageState extends State<PreviewTokoPage> {
 
                 // ISI SCROLLABLE
                 Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Menu',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-
-                        // GRID MENU
-                        // GRID MENU
-GridView.builder(
-  shrinkWrap: true,
-  physics: const NeverScrollableScrollPhysics(),
-  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-    crossAxisCount: 2,
-    crossAxisSpacing: 12,
-    mainAxisSpacing: 10,
-    // boleh kamu adjust kalau mau rasio beda
-    childAspectRatio: 3 / 3.5,
-  ),
-  itemCount: menuToShow.length,
-  itemBuilder: (context, index) {
-    final item = menuToShow[index];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Gambar makanan - dibuat lebih besar & melebar penuh
-        Container(
-          height: 110,              // lebih besar dari 80
-          width: double.infinity,   // biar full lebar kolom
-          decoration: BoxDecoration(
-            color: const Color(0xFFEDE6FF),
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-
-        // jarak sangat rapat dari gambar ke nama
-        const SizedBox(height: 4),
-
-        // Nama makanan (Food 1)
-        Text(
-          item.title,
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-
-        // jarak rapat ke price
-        const SizedBox(height: 2),
-
-        // Price
-        Text(
-          item.price,
-          style: const TextStyle(
-            fontSize: 11,
-            color: Colors.grey,
-          ),
-        ),
-      ],
-    );
-  },
-),
-
-
-                        const SizedBox(height: 12),
-
-                        // TOMBOL LIHAT SEMUA (SETELAH DITEKAN → HILANG)
-                        if (!_alreadyShowAll)
-                          SizedBox(
-                            width: double.infinity,
-                            height: 42,
-                            child: OutlinedButton(
-                              style: OutlinedButton.styleFrom(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(24),
-                                ),
-                                side: const BorderSide(
-                                  color: Color(0xFF635BFF),
+                  child: _isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : errorMessage != null
+                          ? Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(16.0),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Icons.error_outline,
+                                      size: 64,
+                                      color: Colors.red,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      'Failed to load data',
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      errorMessage!,
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(color: Colors.grey),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    ElevatedButton(
+                                      onPressed: _loadTenantData,
+                                      child: const Text('Retry'),
+                                    ),
+                                  ],
                                 ),
                               ),
-                              onPressed: () {
-                                setState(() {
-                                  menuToShow = List<_MenuItem>.from(menuList);
-                                  _alreadyShowAll = true; // HILANGKAN TOMBOL
-                                });
-                              },
-                              child: const Text(
-                                'Lihat semua',
-                                style: TextStyle(
-                                  color: Color(0xFF635BFF),
-                                  fontWeight: FontWeight.w500,
-                                ),
+                            )
+                          : SingleChildScrollView(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Menu',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+
+                                  // GRID MENU
+                                  menuList.isEmpty
+                                      ? Center(
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(32.0),
+                                            child: Column(
+                                              children: [
+                                                const Icon(
+                                                  Icons.restaurant_menu,
+                                                  size: 64,
+                                                  color: Colors.grey,
+                                                ),
+                                                const SizedBox(height: 16),
+                                                const Text(
+                                                  'No items available',
+                                                  style: TextStyle(
+                                                    fontSize: 16,
+                                                    color: Colors.grey,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 8),
+                                                Text(
+                                                  'Tenant ID: ${widget.tenantId}',
+                                                  style: const TextStyle(
+                                                    fontSize: 12,
+                                                    color: Colors.grey,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        )
+                                      : GridView.builder(
+                                          shrinkWrap: true,
+                                          physics:
+                                              const NeverScrollableScrollPhysics(),
+                                          gridDelegate:
+                                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                            crossAxisCount: 2,
+                                            crossAxisSpacing: 12,
+                                            mainAxisSpacing: 10,
+                                            childAspectRatio: 3 / 3.5,
+                                          ),
+                                          itemCount: menuToShow.length,
+                                          itemBuilder: (context, index) {
+                                            final item = menuToShow[index];
+                                            return _buildMenuItem(item);
+                                          },
+                                        ),
+
+                                  const SizedBox(height: 12),
+
+                                  // TOMBOL LIHAT SEMUA
+                                  if (!_alreadyShowAll && menuList.length > 4)
+                                    SizedBox(
+                                      width: double.infinity,
+                                      height: 42,
+                                      child: OutlinedButton(
+                                        style: OutlinedButton.styleFrom(
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(24),
+                                          ),
+                                          side: const BorderSide(
+                                            color: Color(0xFF635BFF),
+                                          ),
+                                        ),
+                                        onPressed: () {
+                                          setState(() {
+                                            menuToShow = List.from(menuList);
+                                            _alreadyShowAll = true;
+                                          });
+                                        },
+                                        child: const Text(
+                                          'Lihat semua',
+                                          style: TextStyle(
+                                            color: Color(0xFF635BFF),
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+
+                                  const SizedBox(height: 90),
+                                ],
                               ),
                             ),
-                          ),
-
-                        const SizedBox(height: 90),
-                      ],
-                    ),
-                  ),
                 ),
               ],
             ),
 
-            // === TOMBOL KERANJANG MELAYANG ===
+            // TOMBOL KERANJANG MELAYANG
             Positioned(
               left: 0,
               right: 0,
@@ -296,7 +374,7 @@ GridView.builder(
               ),
             ),
 
-            // === BOTTOM NAV ===
+            // BOTTOM NAV
             Positioned(
               left: 0,
               right: 0,
@@ -324,11 +402,7 @@ GridView.builder(
                       label: 'Home',
                       index: 0,
                       isActive: _selectedIndex == 0,
-                      onTap: () {
-                        setState(() {
-                          _selectedIndex = 0;
-                        });
-                      },
+                      onTap: () => Navigator.pop(context),
                     ),
                     _BottomNavItem(
                       icon: Icons.receipt_long,
@@ -361,16 +435,153 @@ GridView.builder(
       ),
     );
   }
+
+  Widget _buildMenuItem(Map<String, dynamic> item) {
+    final imageUrl = item['preview_image']?.toString();
+    final itemId = item['id'];
+    
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Image with favorite button
+          Stack(
+            children: [
+              Container(
+                height: 110,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEDE6FF),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(16),
+                  ),
+                  image: imageUrl != null && imageUrl.isNotEmpty
+                      ? DecorationImage(
+                          image: NetworkImage(imageUrl),
+                          fit: BoxFit.cover,
+                          onError: (error, stackTrace) {
+                            print('Error loading item image: $error');
+                          },
+                        )
+                      : null,
+                ),
+                child: imageUrl == null || imageUrl.isEmpty
+                    ? const Center(
+                        child: Icon(
+                          Icons.fastfood,
+                          size: 40,
+                          color: Colors.grey,
+                        ),
+                      )
+                    : null,
+              ),
+              // Favorite button
+              Positioned(
+                top: 8,
+                right: 8,
+                child: GestureDetector(
+                  onTap: () {
+                    // Toggle favorite
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Added to favorites!'),
+                        duration: const Duration(seconds: 1),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 4,
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.favorite_border,
+                      size: 18,
+                      color: Color(0xFF635BFF),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          
+          // Item details
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item['item_name']?.toString() ?? 'Unknown',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Rp ${item['price']?.toString() ?? '0'}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF635BFF),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                
+                // Add to Cart button
+                SizedBox(
+                  width: double.infinity,
+                  height: 32,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('${item['item_name']} added to cart!'),
+                          duration: const Duration(seconds: 1),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF635BFF),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: EdgeInsets.zero,
+                    ),
+                    child: const Text(
+                      'Add to Cart',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-// ===== MODEL DATA =====
-class _MenuItem {
-  final String title;
-  final String price;
-  _MenuItem({required this.title, required this.price});
-}
-
-// ===== BOTTOM NAV ITEM =====
 class _BottomNavItem extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -379,7 +590,6 @@ class _BottomNavItem extends StatelessWidget {
   final VoidCallback onTap;
 
   const _BottomNavItem({
-    super.key,
     required this.icon,
     required this.label,
     required this.index,
@@ -408,7 +618,8 @@ class _BottomNavItem extends StatelessWidget {
               label,
               style: TextStyle(
                 fontSize: 10,
-                color: isActive ? const Color(0xFF635BFF) : Colors.grey.shade600,
+                color:
+                    isActive ? const Color(0xFF635BFF) : Colors.grey.shade600,
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
               ),
             ),

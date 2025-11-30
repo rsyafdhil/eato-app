@@ -3,8 +3,9 @@ import 'kantin_page.dart';
 import 'preview_toko_page.dart';
 import 'profile_page.dart';
 import 'riwayat_transaksi_page.dart';
+import '../services/api_services.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   final String username;
   final String phoneNumber;
 
@@ -15,21 +16,54 @@ class HomePage extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final List<String> kantinList = [
-      'Toko 1',
-      'Toko 2',
-      'Toko 3',
-      'Toko 4',
-      'Toko 5',
-    ];
+  State<HomePage> createState() => _HomePageState();
+}
 
-    final List<_MenuItem> recommendedMenu = [
-      _MenuItem(title: 'Food 1', toko: 'Toko 1'),
-      _MenuItem(title: 'Food 2', toko: 'Toko 4'),
-      _MenuItem(title: 'Food 3', toko: 'Toko 6'),
-      _MenuItem(title: 'Food 1', toko: 'Toko 2'),
-    ];
+class _HomePageState extends State<HomePage> {
+  List<dynamic> kantinList = [];
+  List<dynamic> recommendedMenu = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final tenants = await ApiService.getTenants();
+      
+      setState(() {
+        kantinList = tenants.take(5).toList(); // Show first 5 tenants
+        _isLoading = false;
+      });
+
+      // Load items from first tenant for recommended menu
+      if (tenants.isNotEmpty) {
+        final items = await ApiService.getItemsByTenant(tenants[0]['id']);
+        setState(() {
+          recommendedMenu = items.take(4).toList();
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading data: $e')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -46,7 +80,7 @@ class HomePage extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      "Hello 👋, $username!",
+                      "Hello 👋, ${widget.username}!",
                       style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
@@ -94,11 +128,13 @@ class HomePage extends StatelessWidget {
             const SizedBox(height: 16),
 
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                     /// KANTIN TITLE
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -151,41 +187,69 @@ class HomePage extends StatelessWidget {
                     /// LIST KANTIN
                     SizedBox(
                       height: 110,
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.only(left: 20, right: 20),
-                        itemCount: kantinList.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 12),
-                        itemBuilder: (context, index) {
-                          final nama = kantinList[index];
-                          return GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      PreviewTokoPage(namaToko: nama),
-                                ),
-                              );
-                            },
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(
-                                  width: 110,
-                                  height: 80,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFEDE6FF),
-                                    borderRadius: BorderRadius.circular(16),
+                      child: kantinList.isEmpty
+                          ? const Center(child: Text('No tenants available'))
+                          : ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              padding: const EdgeInsets.only(left: 20, right: 20),
+                              itemCount: kantinList.length,
+                              separatorBuilder: (_, __) => const SizedBox(width: 12),
+                              itemBuilder: (context, index) {
+                                final kantin = kantinList[index];
+                                final nama = kantin['name'] ?? 'Unknown';
+                                final tenantId = kantin['id'] ?? 0;
+                                final previewImage = kantin['preview_image'];
+
+                                return GestureDetector(
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => PreviewTokoPage(
+                                          namaToko: nama,
+                                          tenantId: tenantId,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Container(
+                                        width: 110,
+                                        height: 80,
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFEDE6FF),
+                                          borderRadius: BorderRadius.circular(16),
+                                          image: previewImage != null
+                                              ? DecorationImage(
+                                                  image: NetworkImage(previewImage),
+                                                  fit: BoxFit.cover,
+                                                )
+                                              : null,
+                                        ),
+                                        child: previewImage == null
+                                            ? const Center(
+                                                child: Icon(
+                                                  Icons.store,
+                                                  size: 40,
+                                                  color: Colors.grey,
+                                                ),
+                                              )
+                                            : null,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        nama,
+                                        style: const TextStyle(fontSize: 12),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
                                   ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(nama, style: const TextStyle(fontSize: 12)),
-                              ],
+                                );
+                              },
                             ),
-                          );
-                        },
-                      ),
                     ),
 
                     const SizedBox(height: 24),
@@ -223,8 +287,10 @@ class HomePage extends StatelessWidget {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (_) =>
-                                          PreviewTokoPage(namaToko: item.toko),
+                                      builder: (_) => PreviewTokoPage(
+                                        namaToko: item['tenant']?['name'] ?? 'Unknown',
+                                        tenantId: item['tenant_id'] ?? 0,
+                                      ),
                                     ),
                                   );
                                 },
@@ -236,19 +302,36 @@ class HomePage extends StatelessWidget {
                                       decoration: BoxDecoration(
                                         color: const Color(0xFFEDE6FF),
                                         borderRadius: BorderRadius.circular(16),
+                                        image: item['preview_image'] != null
+                                            ? DecorationImage(
+                                                image: NetworkImage(item['preview_image']),
+                                                fit: BoxFit.cover,
+                                              )
+                                            : null,
                                       ),
+                                      child: item['preview_image'] == null
+                                          ? const Center(
+                                              child: Icon(
+                                                Icons.fastfood,
+                                                size: 40,
+                                                color: Colors.grey,
+                                              ),
+                                            )
+                                          : null,
                                     ),
                                     const SizedBox(height: 3),
                                     Text(
-                                      item.title,
+                                      item['item_name'] ?? 'Unknown',
                                       style: const TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w600,
                                       ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                     const SizedBox(height: 1),
                                     Text(
-                                      item.toko,
+                                      'Rp ${item['price'] ?? 0}',
                                       style: const TextStyle(
                                         fontSize: 11,
                                         color: Colors.grey,
@@ -263,30 +346,23 @@ class HomePage extends StatelessWidget {
                       ),
                     ),
 
-                    const SizedBox(height: 24),
-                  ],
-                ),
-              ),
+                        const SizedBox(height: 24),
+                      ],
+                    ),
+                  ),
             ),
 
             /// BOTTOM NAV
             _BottomNavBar(
               currentIndex: 0,
-              username: username,
-              phoneNumber: phoneNumber,
+              username: widget.username,
+              phoneNumber: widget.phoneNumber,
             ),
           ],
         ),
       ),
     );
   }
-}
-
-class _MenuItem {
-  final String title;
-  final String toko;
-
-  _MenuItem({required this.title, required this.toko});
 }
 
 class _BottomNavBar extends StatelessWidget {
