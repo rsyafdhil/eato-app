@@ -4,6 +4,7 @@ import 'preview_toko_page.dart';
 import 'profile_page.dart';
 import 'riwayat_transaksi_page.dart';
 import '../services/api_services.dart';
+import 'food_detail_page.dart';
 
 class HomePage extends StatefulWidget {
   final String username;
@@ -23,6 +24,14 @@ class _HomePageState extends State<HomePage> {
   List<dynamic> kantinList = [];
   List<dynamic> recommendedMenu = [];
   bool _isLoading = true;
+  String getTenantName(int tenantId) {
+  final tenant = kantinList.firstWhere(
+    (t) => t['id'] == tenantId,
+    orElse: () => null,
+  );
+
+  return tenant != null ? tenant['name'] : 'Unknown';
+}
 
   @override
   void initState() {
@@ -283,17 +292,16 @@ class _HomePageState extends State<HomePage> {
                             itemBuilder: (context, index) {
                               final item = recommendedMenu[index];
                               return GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => PreviewTokoPage(
-                                        namaToko: item['tenant']?['name'] ?? 'Unknown',
-                                        tenantId: item['tenant_id'] ?? 0,
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => FoodDetailPage(
+                                          itemId: item['id'],                    
+                                        ),
                                       ),
-                                    ),
-                                  );
-                                },
+                                    );
+                                  },
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
