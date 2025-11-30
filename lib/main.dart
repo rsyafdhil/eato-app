@@ -44,7 +44,7 @@ class MyApp extends StatelessWidget {
         // tested with just a hot reload.
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      initialRoute: '/form',
+      initialRoute: '/',
       // home: const LoginPage(),
       routes: {
         '/': (context) => const LoginPage(),
@@ -53,7 +53,7 @@ class MyApp extends StatelessWidget {
         '/daftar_kantin': (context) => const KantinPage(),
         '/checkout' : (context) => const CheckoutPage(),
         '/homepage' : (context) => const HomePage(username: 'username', phoneNumber: 'phoneNumber'),
-        '/preview' : (context) => const PreviewTokoPage(namaToko: 'Gacor'),
+        '/preview' : (context) => const PreviewTokoPage(namaToko: 'Gacor', tenantId: 1,),
         '/profile' : (context) => const ProfilePage(username: 'saga', phoneNumber: '08943475832'),
         '/favorites' : (context) => const FavoritePage(username: 's', phoneNumber: 'phoneNumber'),
         '/food' : (context) => const FoodDetailPage(name: 'Nasi Kebuli', image: '', price: 'Rp 12.000', description: 'Makanan Gacor'),

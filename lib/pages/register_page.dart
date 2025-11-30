@@ -1,13 +1,13 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
+import '../services/api_services.dart';
 import 'login_page.dart';
-import 'package:http/http.dart' as http;
+import 'home_page.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key, required this.title});
 
-  final String title; // Judul Halaman
+  final String title;
+  
   @override
   State<RegisterPage> createState() => _RegisterPageState();
 }
@@ -17,40 +17,79 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController nameController = TextEditingController();
-  final TextEditingController passwordConfirmationController =
-      TextEditingController();
+  final TextEditingController passwordConfirmationController = TextEditingController();
+
+  bool isLoading = false;
 
   Future<void> register() async {
-    final registerApi = "http://localhost:8000/api/register";
-    final response = await http.post(
-      Uri.parse(registerApi),
-      body: {
-        'email': emailController.text,
-        'password': passwordController.text,
-        'password_confirmation': passwordConfirmationController.text,
-        'nomor_telefon': nomorTelefonController.text,
-        'name': nameController.text,
-      },
-    );
+    // Validate input
+    if (nameController.text.isEmpty ||
+        emailController.text.isEmpty ||
+        passwordController.text.isEmpty ||
+        passwordConfirmationController.text.isEmpty ||
+        nomorTelefonController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill in all fields')),
+      );
+      return;
+    }
 
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      final data = jsonDecode(response.body);
+    // Check password match
+    if (passwordController.text != passwordConfirmationController.text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Passwords do not match')),
+      );
+      return;
+    }
 
-      // Contoh format respons Laravel:
-      // { "success": true, "message": "Login berhasil" }
+    setState(() {
+      isLoading = true;
+    });
 
-      if (data['success'] == true) {
-        // 👉 Pindah ke halaman daftar_kantin
-        Navigator.pushNamed(context, '/daftar_kantin');
+    try {
+      final result = await ApiService.register(
+        name: nameController.text.trim(),
+        email: emailController.text.trim(),
+        password: passwordController.text,
+        passwordConfirmation: passwordConfirmationController.text,
+        nomorTelefon: nomorTelefonController.text.trim(),
+      );
+
+      setState(() {
+        isLoading = false;
+      });
+
+      if (result['success'] == true) {
+        // Get user data
+        final userData = result['data']['user'];
+        final username = userData['name'] ?? 'User';
+        final phoneNumber = userData['nomor_telefon'] ?? '';
+
+        // Navigate to home page
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => HomePage(
+              username: username,
+              phoneNumber: phoneNumber,
+            ),
+          ),
+        );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(data['message'] ?? 'Register gagal')),
+          SnackBar(
+            content: Text(result['message'] ?? 'Registration failed'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
-    } else if (response.statusCode == 422) {
-      final data = jsonDecode(response.body);
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+      });
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(data['message'] ?? 'Validasi gagal')),
+        SnackBar(content: Text("Error: $e")),
       );
     }
   }
@@ -58,179 +97,163 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            const SizedBox(height: 40),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const SizedBox(height: 40),
 
-            // Title EatO
-            Text(
-              widget.title,
-              style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold),
-            ),
-
-            const SizedBox(height: 40),
-
-            // Nomor Telepon
-            Align(
-              alignment: Alignment.centerLeft,
-              child: const Text(
-                "Nomor Telefon*",
-                style: TextStyle(fontSize: 14),
+              Text(
+                widget.title,
+                style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold),
               ),
-            ),
-            const SizedBox(height: 6),
-            TextField(
-              decoration: InputDecoration(
-                hintText: "Nomer Telepon",
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
+
+              const SizedBox(height: 40),
+
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text("Nomor Telefon*", style: TextStyle(fontSize: 14)),
               ),
-              controller: nomorTelefonController,
-              style: const TextStyle(fontSize: 14),
-            ),
-
-            const SizedBox(height: 20),
-
-            // Username
-            Align(
-              alignment: Alignment.centerLeft,
-              child: const Text("Username", style: TextStyle(fontSize: 14)),
-            ),
-            const SizedBox(height: 6),
-            TextField(
-              decoration: InputDecoration(
-                hintText: "Username",
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              controller: nameController,
-              style: const TextStyle(fontSize: 14),
-            ),
-            const SizedBox(height: 20),
-
-            // email
-            Align(
-              alignment: Alignment.centerLeft,
-              child: const Text("Email", style: TextStyle(fontSize: 14)),
-            ),
-            const SizedBox(height: 6),
-            TextField(
-              decoration: InputDecoration(
-                hintText: "Email",
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              controller: emailController,
-              style: const TextStyle(fontSize: 14),
-            ),
-
-            const SizedBox(height: 20),
-
-            // Password
-            Align(
-              alignment: Alignment.centerLeft,
-              child: const Text("Password*", style: TextStyle(fontSize: 14)),
-            ),
-            const SizedBox(height: 6),
-            TextField(
-              obscureText: true,
-              decoration: InputDecoration(
-                hintText: "password",
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              controller: passwordController,
-              style: const TextStyle(fontSize: 14),
-            ),
-
-            // Password Confirmation
-            Align(
-              alignment: Alignment.centerLeft,
-              child: const Text(
-                "Password Confirmation*",
-                style: TextStyle(fontSize: 14),
-              ),
-            ),
-            const SizedBox(height: 6),
-            TextField(
-              obscureText: true,
-              decoration: InputDecoration(
-                hintText: "password",
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              controller: passwordConfirmationController,
-              style: const TextStyle(fontSize: 14),
-            ),
-
-            const SizedBox(height: 6),
-
-            // Forgot password
-            Align(
-              alignment: Alignment.centerRight,
-              child: Text(
-                "Forgot Password?",
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
-              ),
-            ),
-
-            const SizedBox(height: 25),
-
-            // Sign Up button
-            SizedBox(
-              width: double.infinity,
-              height: 55,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF635BFF),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
+              const SizedBox(height: 6),
+              TextField(
+                controller: nomorTelefonController,
+                keyboardType: TextInputType.phone,
+                decoration: InputDecoration(
+                  hintText: "Nomer Telepon",
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-                onPressed: register,
-                child: const Text(
-                  "Sign Up",
-                  style: TextStyle(fontSize: 16, color: Colors.white),
-                ),
+                style: const TextStyle(fontSize: 14),
               ),
-            ),
 
-            const SizedBox(height: 25),
+              const SizedBox(height: 20),
 
-            // Already have account?
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text("Already have account?"),
-                const SizedBox(width: 5),
-                GestureDetector(
-                  onTap: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const LoginPage(),
-                      ),
-                    );
-                  },
-                  child: Text(
-                    "Sign in!",
-                    style: const TextStyle(
-                      color: Color(0xFF635BFF),
-                      fontWeight: FontWeight.bold,
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text("Username", style: TextStyle(fontSize: 14)),
+              ),
+              const SizedBox(height: 6),
+              TextField(
+                controller: nameController,
+                decoration: InputDecoration(
+                  hintText: "Username",
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                style: const TextStyle(fontSize: 14),
+              ),
+              
+              const SizedBox(height: 20),
+
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text("Email", style: TextStyle(fontSize: 14)),
+              ),
+              const SizedBox(height: 6),
+              TextField(
+                controller: emailController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: InputDecoration(
+                  hintText: "Email",
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                style: const TextStyle(fontSize: 14),
+              ),
+
+              const SizedBox(height: 20),
+
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text("Password*", style: TextStyle(fontSize: 14)),
+              ),
+              const SizedBox(height: 6),
+              TextField(
+                controller: passwordController,
+                obscureText: true,
+                decoration: InputDecoration(
+                  hintText: "password",
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                style: const TextStyle(fontSize: 14),
+              ),
+
+              const SizedBox(height: 20),
+
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text("Password Confirmation*", style: TextStyle(fontSize: 14)),
+              ),
+              const SizedBox(height: 6),
+              TextField(
+                controller: passwordConfirmationController,
+                obscureText: true,
+                decoration: InputDecoration(
+                  hintText: "password",
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                style: const TextStyle(fontSize: 14),
+              ),
+
+              const SizedBox(height: 25),
+
+              SizedBox(
+                width: double.infinity,
+                height: 55,
+                child: ElevatedButton(
+                  onPressed: isLoading ? null : register,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF635BFF),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
                     ),
                   ),
+                  child: isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text(
+                          "Sign Up",
+                          style: TextStyle(fontSize: 16, color: Colors.white),
+                        ),
                 ),
-              ],
-            ),
-          ],
+              ),
+
+              const SizedBox(height: 25),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text("Already have account?"),
+                  const SizedBox(width: 5),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const LoginPage(),
+                        ),
+                      );
+                    },
+                    child: const Text(
+                      "Sign in!",
+                      style: TextStyle(
+                        color: Color(0xFF635BFF),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
