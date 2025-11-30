@@ -1,67 +1,159 @@
 import 'package:flutter/material.dart';
+import '../services/api_services.dart';
+import 'checkout_page.dart';
 
-class FoodDetailPage extends StatelessWidget {
-  final String name;
-  final String image;
-  final String price;
-  final String description;
+class FoodDetailPage extends StatefulWidget {
+  final int itemId;
 
   const FoodDetailPage({
     super.key,
-    required this.name,
-    required this.image,
-    required this.price,
-    required this.description,
+    required this.itemId,
   });
 
+  @override
+  State<FoodDetailPage> createState() => _FoodDetailPageState();
+}
+
+class _FoodDetailPageState extends State<FoodDetailPage> {
   static const double _navBarHeight = 90.0;
+
+  Map<String, dynamic>? itemData;
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchItem();
+  }
+
+  Future<void> fetchItem() async {
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      print(">>> FoodDetailPage.fetchItem: requesting id ${widget.itemId}");
+      final response = await ApiService.getItemById(widget.itemId);
+
+      // DEBUG: print raw response so we can see structure
+      print(">>> FoodDetailPage.fetchItem: raw response => $response");
+
+      // Normalize: if API returns { "data": {...} } use that, otherwise use response directly
+      Map<String, dynamic>? normalized;
+      if (response == null) {
+        normalized = null;
+      } else if (response is Map<String, dynamic> && response.containsKey('data')) {
+        final d = response['data'];
+        if (d is Map<String, dynamic>) {
+          normalized = d;
+        } else {
+          normalized = null;
+        }
+      } else if (response is Map<String, dynamic>) {
+        normalized = response;
+      } else {
+        normalized = null;
+      }
+
+      setState(() {
+        itemData = normalized;
+        isLoading = false;
+      });
+    } catch (e, st) {
+      print(">>> FoodDetailPage.fetchItem: ERROR $e\n$st");
+      if (!mounted) return;
+      setState(() {
+        isLoading = false;
+        itemData = null;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching item: $e')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (itemData == null) {
+      return Scaffold(
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.black),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ),
+        body: const Center(child: Text("Item not found")),
+      );
+    }
+
+    // Safe getters (use preview page keys)
+    final String title = itemData?['item_name']?.toString() ?? itemData?['name']?.toString() ?? '-';
+    final String imageUrl = itemData?['preview_image']?.toString() ?? itemData?['image']?.toString() ?? '';
+    final String description = itemData?['description']?.toString() ?? itemData?['desc']?.toString() ?? 'No description available';
+    final String priceText = itemData?['price']?.toString() ?? '0';
+
     return Scaffold(
       backgroundColor: Colors.white,
       bottomNavigationBar: customBottomNavbar(0),
       body: Stack(
         children: [
-          SafeArea(child: _bodyContent(context)),
+          SafeArea(child: _bodyContent(context, title, imageUrl, description, priceText)),
 
           // ============================
-          // TOMBOL KERANJANG
+          // TOMBOL KERANJANG (navigates to checkout)
           // ============================
           Positioned(
-            bottom: 20, // posisi sudah sama dengan halaman toko
+            bottom: 20,
             left: 0,
             right: 0,
             child: Center(
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 22, vertical: 12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF6C4DFF),
-                  borderRadius: BorderRadius.circular(30),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black26,
-                      blurRadius: 8,
-                      offset: Offset(0, 4),
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const CheckoutPage(),
                     ),
-                  ],
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.shopping_cart_outlined,
-                        color: Colors.white, size: 20),
-                    SizedBox(width: 8),
-                    Text(
-                      "Keranjang",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
+                  );
+                },
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF6C4DFF),
+                    borderRadius: BorderRadius.circular(30),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Colors.black26,
+                        blurRadius: 8,
+                        offset: Offset(0, 4),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.shopping_cart_outlined,
+                          color: Colors.white, size: 20),
+                      SizedBox(width: 8),
+                      Text(
+                        "Keranjang",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -72,14 +164,14 @@ class FoodDetailPage extends StatelessWidget {
   }
 
   // ====================================================
-  // BODY CONTENT
+  // BODY CONTENT (now accepts resolved fields)
   // ====================================================
-  Widget _bodyContent(BuildContext context) {
+  Widget _bodyContent(BuildContext context, String title, String imageUrl, String description, String priceText) {
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _headerImage(context),
+          _headerImage(context, title, imageUrl),
           const SizedBox(height: 20),
 
           Padding(
@@ -94,72 +186,19 @@ class FoodDetailPage extends StatelessWidget {
             ),
           ),
 
-          const SizedBox(height: 25),
+          const SizedBox(height: 12),
 
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Text(
-              "Komentar",
-              style: TextStyle(
-                fontSize: 20,
+              "Rp $priceText",
+              style: const TextStyle(
+                fontSize: 18,
                 fontWeight: FontWeight.bold,
+                color: Color(0xFF6C4DFF),
               ),
             ),
           ),
-
-          const SizedBox(height: 10),
-          _commentItem(),
-          _commentItem(),
-          const SizedBox(height: 20),
-
-          // INPUT KOMENTAR
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Container(
-              padding: const EdgeInsets.all(15),
-              decoration: BoxDecoration(
-                color: Colors.grey[200],
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const TextField(
-                maxLines: 3,
-                decoration: InputDecoration(
-                  hintText: "Masukkan komentar",
-                  border: InputBorder.none,
-                ),
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 10),
-
-          // TOMBOL KIRIM
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: ElevatedButton(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xff6C63FF),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 25, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                child: const Text(
-                  "Kirim",
-                  style: TextStyle(
-                    color: Colors.white, // FIX: putih
-                    fontWeight: FontWeight.w600,
-                    fontSize: 15,
-                  ),
-                ),
-              ),
-            ),
-          ),
-
           const SizedBox(height: 140),
         ],
       ),
@@ -169,13 +208,26 @@ class FoodDetailPage extends StatelessWidget {
   // ====================================================
   // HEADER GAMBAR
   // ====================================================
-  Widget _headerImage(BuildContext context) {
+  Widget _headerImage(BuildContext context, String title, String imageUrl) {
     return Stack(
       children: [
         SizedBox(
           width: double.infinity,
           height: 280,
-          child: Image.asset(image, fit: BoxFit.cover),
+          child: imageUrl.isNotEmpty
+              ? Image.network(
+                  imageUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const Center(
+                    child: Icon(Icons.broken_image, size: 40),
+                  ),
+                )
+              : Container(
+                  color: const Color(0xFFEDE6FF),
+                  child: const Center(
+                    child: Icon(Icons.fastfood, size: 48, color: Colors.grey),
+                  ),
+                ),
         ),
 
         Container(
@@ -215,7 +267,7 @@ class FoodDetailPage extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                name,
+                title,
                 style: const TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
@@ -223,13 +275,6 @@ class FoodDetailPage extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 4),
-              const Text(
-                "Nama Toko",
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.white70,
-                ),
-              ),
             ],
           ),
         ),
@@ -237,37 +282,6 @@ class FoodDetailPage extends StatelessWidget {
     );
   }
 
-  // ====================================================
-  // ITEM KOMENTAR
-  // ====================================================
-  Widget _commentItem() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      child: Column(
-        children: [
-          Row(
-            children: const [
-              CircleAvatar(
-                radius: 22,
-                backgroundImage: AssetImage("assets/profile.jpg"),
-              ),
-              SizedBox(width: 12),
-              Text(
-                "Farhan Daffa D",
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer magna justo.",
-            style: TextStyle(fontSize: 14, color: Colors.black87),
-          ),
-          const Divider(height: 25),
-        ],
-      ),
-    );
-  }
 
   // ====================================================
   // NAVBAR

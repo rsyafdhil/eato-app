@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import '../services/cart_manager.dart';
-// Import CartManager dari file preview_toko_page.dart
-// Pastikan CartManager dan CartItem sudah ada di file terpisah atau di file yang sama
 
 class CheckoutPage extends StatefulWidget {
   const CheckoutPage({super.key});
