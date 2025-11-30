@@ -44,7 +44,7 @@ class MyApp extends StatelessWidget {
         // tested with just a hot reload.
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      initialRoute: '/',
+      initialRoute: '/profile',
       // home: const LoginPage(),
       routes: {
         '/': (context) => const LoginPage(),
