@@ -1,11 +1,7 @@
 import 'dart:convert';
-import 'dart:io';
-
-import '../services/api_services.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'register_page.dart';
 import 'package:http/http.dart' as http;
+import 'register_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -21,31 +17,45 @@ class _LoginPageState extends State<LoginPage> {
   bool isLoading = false;
 
   Future<void> login() async {
-    final response = await http.post(
-      Uri.parse("http://localhost:8000/api/login"), // ganti sesuai API kamu
-      body: {
-        'email': emailController.text,
-        'password': passwordController.text,
-      },
-    );
+    setState(() {
+      isLoading = true; 
+    });
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
+    try {
+      final response = await http.post(
+        Uri.parse("http://localhost:8000/api/login"),
+        body: {
+          'email': emailController.text,
+          'password': passwordController.text,
+        },
+      );
 
-      // Contoh format respons Laravel:
-      // { "success": true, "message": "Login berhasil" }
+      setState(() {
+        isLoading = false; // ❗ HIDE LOADING (on finish)
+      });
 
-      if (data['success'] == true) {
-        // 👉 Pindah ke halaman daftar_kantin
-        Navigator.pushNamed(context, '/daftar_kantin');
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        if (data['success'] == true) {
+          Navigator.pushNamed(context, '/daftar_kantin');
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(data['message'] ?? 'Login gagal')),
+          );
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(data['message'] ?? 'Login gagal')),
+          const SnackBar(content: Text('Terjadi kesalahan pada server')),
         );
       }
-    } else {
+    } catch (e) {
+      setState(() {
+        isLoading = false; // ❗ Always hide loader on error
+      });
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Terjadi kesalahan pada server')),
+        SnackBar(content: Text("Error: $e")),
       );
     }
   }
@@ -61,7 +71,6 @@ class _LoginPageState extends State<LoginPage> {
             children: [
               const SizedBox(height: 60),
 
-              // APP TITLE
               const Text(
                 "EatO",
                 style: TextStyle(fontSize: 42, fontWeight: FontWeight.bold),
@@ -69,14 +78,12 @@ class _LoginPageState extends State<LoginPage> {
 
               const SizedBox(height: 60),
 
-              // Username label
               const Align(
                 alignment: Alignment.centerLeft,
                 child: Text("Email", style: TextStyle(fontSize: 14)),
               ),
               const SizedBox(height: 6),
 
-              // Username TextField
               TextField(
                 controller: emailController,
                 decoration: InputDecoration(
@@ -89,14 +96,12 @@ class _LoginPageState extends State<LoginPage> {
 
               const SizedBox(height: 20),
 
-              // Password label
               const Align(
                 alignment: Alignment.centerLeft,
                 child: Text("Password", style: TextStyle(fontSize: 14)),
               ),
               const SizedBox(height: 6),
 
-              // Password field
               TextField(
                 controller: passwordController,
                 obscureText: true,
@@ -110,42 +115,41 @@ class _LoginPageState extends State<LoginPage> {
 
               const SizedBox(height: 10),
 
-              // Forgot password
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
                   onPressed: () {},
-                  child: const Text(
-                    "Forgot Password?",
-                    style: TextStyle(color: Colors.grey),
-                  ),
+                  child: const Text("Forgot Password?",
+                      style: TextStyle(color: Colors.grey)),
                 ),
               ),
 
               const SizedBox(height: 10),
-
-              // Sign In Button
               SizedBox(
                 width: double.infinity,
                 height: 55,
                 child: ElevatedButton(
-                  onPressed: login,
+                  onPressed: isLoading ? null : login, // disable when loading
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF6A5CFF), // Purple button
+                    backgroundColor: const Color(0xFF6A5CFF),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
                     ),
                   ),
-                  child: const Text(
-                    "Sign In",
-                    style: TextStyle(fontSize: 18, color: Colors.white),
-                  ),
+                  child: isLoading
+                      ? const CircularProgressIndicator(
+                          color: Colors.white,
+                        )
+                      : const Text(
+                          "Sign In",
+                          style: TextStyle(
+                              fontSize: 18, color: Colors.white),
+                        ),
                 ),
               ),
 
               const SizedBox(height: 20),
 
-              // Sign Up link
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
