@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+// Update these imports based on where you saved cart_manager.dart
+import '../services/cart_manager.dart';
+import 'checkout_page.dart';
 
 class PreviewTokoPage extends StatefulWidget {
   final String namaToko;
@@ -15,16 +18,17 @@ class PreviewTokoPage extends StatefulWidget {
 class _PreviewTokoPageState extends State<PreviewTokoPage> {
   int _selectedIndex = 1; // keranjang aktif
   bool _alreadyShowAll = false; // setelah true, tombol hilang
+  final CartManager _cartManager = CartManager();
 
   final List<_MenuItem> menuList = [
-    _MenuItem(title: 'Food 1', price: 'Price'),
-    _MenuItem(title: 'Food 2', price: 'Price'),
-    _MenuItem(title: 'Food 3', price: 'Price'),
-    _MenuItem(title: 'Food 4', price: 'Price'),
-    _MenuItem(title: 'Food 5', price: 'Price'),
-    _MenuItem(title: 'Food 6', price: 'Price'),
-    _MenuItem(title: 'Food 7', price: 'Price'),
-    _MenuItem(title: 'Food 8', price: 'Price'),
+    _MenuItem(id: '1', title: 'Food 1', price: 'Rp 25.000'),
+    _MenuItem(id: '2', title: 'Food 2', price: 'Rp 30.000'),
+    _MenuItem(id: '3', title: 'Food 3', price: 'Rp 20.000'),
+    _MenuItem(id: '4', title: 'Food 4', price: 'Rp 35.000'),
+    _MenuItem(id: '5', title: 'Food 5', price: 'Rp 28.000'),
+    _MenuItem(id: '6', title: 'Food 6', price: 'Rp 32.000'),
+    _MenuItem(id: '7', title: 'Food 7', price: 'Rp 27.000'),
+    _MenuItem(id: '8', title: 'Food 8', price: 'Rp 33.000'),
   ];
 
   late List<_MenuItem> menuToShow;
@@ -34,6 +38,62 @@ class _PreviewTokoPageState extends State<PreviewTokoPage> {
     super.initState();
     // awal: cuma 4 menu
     menuToShow = menuList.take(4).toList();
+  }
+
+  void _addToCart(_MenuItem item) {
+    setState(() {
+      _cartManager.addToCart(item.id, item.title, item.price);
+    });
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${item.title} ditambahkan ke keranjang'),
+        duration: const Duration(seconds: 1),
+        backgroundColor: const Color(0xFF635BFF),
+      ),
+    );
+  }
+
+  void _toggleFavorite(_MenuItem item) {
+    setState(() {
+      _cartManager.toggleFavorite(item.id, item.title, item.price);
+    });
+    
+    final isFav = _cartManager.isFavorite(item.id);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          isFav 
+            ? '${item.title} ditambahkan ke favorit' 
+            : '${item.title} dihapus dari favorit'
+        ),
+        duration: const Duration(seconds: 1),
+        backgroundColor: isFav ? Colors.pink : Colors.grey,
+      ),
+    );
+  }
+
+  void _goToCheckout() {
+    if (_cartManager.cartItems.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Keranjang masih kosong'),
+          duration: Duration(seconds: 1),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const CheckoutPage(),
+      ),
+    ).then((_) {
+      // Refresh state setelah kembali dari checkout
+      setState(() {});
+    });
   }
 
   @override
@@ -146,67 +206,135 @@ class _PreviewTokoPageState extends State<PreviewTokoPage> {
                         const SizedBox(height: 8),
 
                         // GRID MENU
-                        // GRID MENU
-GridView.builder(
-  shrinkWrap: true,
-  physics: const NeverScrollableScrollPhysics(),
-  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-    crossAxisCount: 2,
-    crossAxisSpacing: 12,
-    mainAxisSpacing: 10,
-    // boleh kamu adjust kalau mau rasio beda
-    childAspectRatio: 3 / 3.5,
-  ),
-  itemCount: menuToShow.length,
-  itemBuilder: (context, index) {
-    final item = menuToShow[index];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Gambar makanan - dibuat lebih besar & melebar penuh
-        Container(
-          height: 110,              // lebih besar dari 80
-          width: double.infinity,   // biar full lebar kolom
-          decoration: BoxDecoration(
-            color: const Color(0xFFEDE6FF),
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
+                        GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 10,
+                            childAspectRatio: 3 / 4.2,
+                          ),
+                          itemCount: menuToShow.length,
+                          itemBuilder: (context, index) {
+                            final item = menuToShow[index];
+                            final isFavorite = _cartManager.isFavorite(item.id);
+                            
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Gambar makanan dengan Love Button
+                                Stack(
+                                  children: [
+                                    Container(
+                                      height: 110,
+                                      width: double.infinity,
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFEDE6FF),
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      child: const Center(
+                                        child: Icon(
+                                          Icons.fastfood,
+                                          size: 40,
+                                          color: Color(0xFF635BFF),
+                                        ),
+                                      ),
+                                    ),
+                                    // Love Button
+                                    Positioned(
+                                      top: 8,
+                                      right: 8,
+                                      child: GestureDetector(
+                                        onTap: () => _toggleFavorite(item),
+                                        child: Container(
+                                          padding: const EdgeInsets.all(6),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            shape: BoxShape.circle,
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black.withOpacity(0.1),
+                                                blurRadius: 4,
+                                                offset: const Offset(0, 2),
+                                              ),
+                                            ],
+                                          ),
+                                          child: Icon(
+                                            isFavorite 
+                                              ? Icons.favorite 
+                                              : Icons.favorite_border,
+                                            color: isFavorite 
+                                              ? Colors.pink 
+                                              : Colors.grey,
+                                            size: 18,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
 
-        // jarak sangat rapat dari gambar ke nama
-        const SizedBox(height: 4),
+                                const SizedBox(height: 6),
 
-        // Nama makanan (Food 1)
-        Text(
-          item.title,
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
+                                // Nama makanan
+                                Text(
+                                  item.title,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
 
-        // jarak rapat ke price
-        const SizedBox(height: 2),
+                                const SizedBox(height: 2),
 
-        // Price
-        Text(
-          item.price,
-          style: const TextStyle(
-            fontSize: 11,
-            color: Colors.grey,
-          ),
-        ),
-      ],
-    );
-  },
-),
+                                // Price
+                                Text(
+                                  item.price,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey,
+                                  ),
+                                ),
 
+                                const SizedBox(height: 6),
+
+                                // Tombol Add to Cart
+                                SizedBox(
+                                  width: double.infinity,
+                                  height: 32,
+                                  child: ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF635BFF),
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 4,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                    onPressed: () => _addToCart(item),
+                                    child: const Text(
+                                      'Add to Cart',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
 
                         const SizedBox(height: 12),
 
-                        // TOMBOL LIHAT SEMUA (SETELAH DITEKAN → HILANG)
+                        // TOMBOL LIHAT SEMUA
                         if (!_alreadyShowAll)
                           SizedBox(
                             width: double.infinity,
@@ -223,7 +351,7 @@ GridView.builder(
                               onPressed: () {
                                 setState(() {
                                   menuToShow = List<_MenuItem>.from(menuList);
-                                  _alreadyShowAll = true; // HILANGKAN TOMBOL
+                                  _alreadyShowAll = true;
                                 });
                               },
                               child: const Text(
@@ -251,11 +379,7 @@ GridView.builder(
               bottom: 82,
               child: Center(
                 child: GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedIndex = 1;
-                    });
-                  },
+                  onTap: _goToCheckout,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 24,
@@ -274,16 +398,16 @@ GridView.builder(
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Icon(
+                      children: [
+                        const Icon(
                           Icons.shopping_cart,
                           color: Colors.white,
                           size: 20,
                         ),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Text(
-                          'Keranjang',
-                          style: TextStyle(
+                          'Keranjang (${_cartManager.getTotalItems()})',
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -365,9 +489,15 @@ GridView.builder(
 
 // ===== MODEL DATA =====
 class _MenuItem {
+  final String id;
   final String title;
   final String price;
-  _MenuItem({required this.title, required this.price});
+  
+  _MenuItem({
+    required this.id,
+    required this.title,
+    required this.price,
+  });
 }
 
 // ===== BOTTOM NAV ITEM =====
