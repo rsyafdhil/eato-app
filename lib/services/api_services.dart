@@ -487,26 +487,39 @@ class ApiService {
     }
   }
 
-  static Future<List<dynamic>> getUserOrders(String token) async {
-    print('Token: $token'); // Debug token
+  static Future<List<dynamic>> getUserOrders(int userId) async {
+    try {
+      final headers = await _getHeaders(); // Ambil headers dengan token
 
-    final response = await http.get(
-      Uri.parse('$baseUrl/orders'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-    );
+      print('>>> getUserOrders: userId=$userId');
+      print('>>> getUserOrders: headers=$headers');
 
-    print('Status Code: ${response.statusCode}'); // Debug status
-    print('Response Body: ${response.body}'); // Debug response
+      final response = await http.get(
+        Uri.parse('$baseUrl/orders'), // Endpoint spesifik user
+        headers: headers,
+      );
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      print('Total orders: ${data['data']?.length}'); // Debug jumlah
-      return data['data'] ?? [];
-    } else {
-      throw Exception('Failed to fetch orders: ${response.body}');
+      print('>>> getUserOrders: Status=${response.statusCode}');
+      print('>>> getUserOrders: Body=${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        if (data['success'] == true) {
+          final orders = data['data'] ?? [];
+          print('>>> getUserOrders: Total orders=${orders.length}');
+          return orders;
+        }
+
+        return [];
+      } else {
+        print('>>> getUserOrders: ERROR - ${response.body}');
+        throw Exception('Failed to fetch orders: ${response.body}');
+      }
+    } catch (e, stackTrace) {
+      print('>>> getUserOrders: EXCEPTION=$e');
+      print('>>> getUserOrders: Stack=$stackTrace');
+      return [];
     }
   }
 
