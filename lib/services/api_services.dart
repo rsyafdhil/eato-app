@@ -213,6 +213,24 @@ class ApiService {
 
   // ==================== ORDER ENDPOINTS ====================
 
+  static Future<Map<String, dynamic>> getOrderStatus(int orderId) async {
+    try {
+      final response = await http.get(
+        Uri.parse("$baseUrl/orders/$orderId/status"),
+        headers: _getHeaders(),
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+
+      return {'status': 'pending'};
+    } catch (e) {
+      print('Error checking order status: $e');
+      return {'status': 'pending'};
+    }
+  }
+
   static Future<Map<String, dynamic>> createOrder({
     required int userId,
     required List<Map<String, dynamic>> items,
@@ -230,6 +248,32 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> createOrderOnBackend({
+    required int userId,
+    required List items,
+    required String alamat,
+  }) async {
+    // contoh panggilan ke backend Laravel
+    // ganti URL dengan endpoint backend-mu
+    final response = await http.post(
+      Uri.parse('http://127.0.0.1:8000/api/orders'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'user_id': userId,
+        'items': items
+            .map((e) => {'item_id': e.id, 'quantity': e.quantity})
+            .toList(),
+        'alamat': alamat,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Gagal membuat order');
+    }
+  }
+
   // Payment gateway
   static Future<Map<String, dynamic>> createOrderWithPayment({
     required int userId,
@@ -237,32 +281,79 @@ class ApiService {
   }) async {
     try {
       print('>>> createOrderWithPayment: userId=$userId, items=$items');
+      final token = await getToken();
 
       final response = await http.post(
-        Uri.parse("$baseUrl/orders"),
+        Uri.parse("$baseUrl/orders/store"),
         headers: _getHeaders(),
         body: json.encode({"user_id": userId, "items": items}),
       );
 
-      print('>>> createOrderWithPayment: Status=${response.statusCode}');
-      print('>>> createOrderWithPayment: Body=${response.body}');
+      print('>>> Status: ${response.statusCode}');
+      print('>>> Body: ${response.body}');
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return data;
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final responseData = json.decode(response.body);
+
+        // Backend return: { success, message, data: { order_id, qr_code_url, ... } }
+        if (responseData['success'] == true && responseData['data'] != null) {
+          final data = responseData['data'];
+
+          // Clean up QR URL
+          String qrUrl = data['qr_code_url'].toString().replaceAll(r'\/', '/');
+          print('QR Url: $qrUrl');
+
+          // Return dengan struktur yang match dengan checkout logic
+          return {
+            'success': true,
+            'data': {
+              'qr_code_url': qrUrl,
+              'order_id': data['order_id'],
+              'order_code': data['order_code'],
+              'total_amount': data['total_amount'],
+              'status': data['status'],
+            },
+            'message': responseData['message'],
+          };
+        } else {
+          return {
+            'success': false,
+            'message': responseData['message'] ?? 'Unknown error',
+          };
+        }
       } else {
+        print('>>> Error Response: ${response.body}');
         return {
           'success': false,
           'message': 'Failed to create order: ${response.statusCode}',
         };
       }
     } catch (e) {
-      print('>>> createOrderWithPayment: ERROR=$e');
+      print('>>> createOrderWithPayment ERROR: $e');
       return {'success': false, 'message': 'Order error: $e'};
     }
   }
 
   // ==================== USER ENDPOINTS ====================
+
+  static Future<int?> getUserId() async {
+    try {
+      final token = await getToken();
+      final response = await http.get(
+        Uri.parse('$baseUrl/user/cred'),
+        headers: _getHeaders(),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data['data']['user_id'];
+      }
+      return null;
+    } catch (e) {
+      print('Error fetching userId: $e');
+      return null;
+    }
+  }
 
   static Future<Map<String, dynamic>?> getCurrentUser() async {
     try {
@@ -281,6 +372,105 @@ class ApiService {
       return null;
     }
   }
-}
 
-// Payment Gateway
+  Future<List> fetchOrders(String token, String role) async {
+    String url;
+
+    if (role == 'merchant') {
+      url = 'https://your-api.com/api/merchant/orders';
+    } else {
+      url = 'https://your-api.com/api/orders';
+    }
+
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['data']; // list orders
+    } else {
+      throw Exception('Failed to fetch orders');
+    }
+  }
+
+  static Future<List<dynamic>> getUserOrders(String token) async {
+    print('Token: $token'); // Debug token
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/orders'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    print('Status Code: ${response.statusCode}'); // Debug status
+    print('Response Body: ${response.body}'); // Debug response
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      print('Total orders: ${data['data']?.length}'); // Debug jumlah
+      return data['data'] ?? [];
+    } else {
+      throw Exception('Failed to fetch orders: ${response.body}');
+    }
+  }
+
+  // Update status pemesanan (owner)
+  static Future<void> updateStatusPemesanan(int orderId, String status) async {
+    try {
+      final token = await getToken();
+
+      if (token == null) {
+        throw 'Token not found';
+      }
+
+      final response = await http.put(
+        Uri.parse('$baseUrl/orders/$orderId/status-pemesanan'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({'status_pemesanan': status}),
+      );
+
+      print('>>> Update Status: ${response.statusCode}');
+      print('>>> Update Response: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success'] != true) {
+          throw data['message'] ?? 'Failed to update status';
+        }
+      } else {
+        throw 'Failed to update status: ${response.statusCode}';
+      }
+    } catch (e) {
+      print('>>> updateStatusPemesanan ERROR: $e');
+      throw Exception('Error updating status: $e');
+    }
+  }
+
+  static Future<Map<String, dynamic>?> getOrderDetail(int orderId) async {
+    try {
+      final response = await http.get(
+        Uri.parse("$baseUrl/orders/$orderId"),
+        headers: _getHeaders(),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data['data'];
+      }
+      return null;
+    } catch (e) {
+      print('Error fetching order detail: $e');
+      return null;
+    }
+  }
+}
