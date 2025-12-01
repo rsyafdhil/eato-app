@@ -1,195 +1,341 @@
 import 'package:flutter/material.dart';
-import '../services/api_services.dart';
+import '../services/api_services.dart'; // Sesuaikan dengan path kamu
+import '../models/order.dart';
 
 class OrderDetailPage extends StatefulWidget {
-  final int orderId;
+  final Order order;
 
-  const OrderDetailPage({super.key, required this.orderId});
+  const OrderDetailPage({Key? key, required this.order}) : super(key: key);
 
   @override
   State<OrderDetailPage> createState() => _OrderDetailPageState();
 }
 
 class _OrderDetailPageState extends State<OrderDetailPage> {
-  Map<String, dynamic>? _orderDetail;
-  bool _isLoading = true;
+  bool _isOwner = false;
+  bool _isUpdating = false;
+  late String _currentStatus;
+
+  final List<String> _statusList = [
+    'dipesan',
+    'disiapkan',
+    'dimasak',
+    'diantar',
+    'selesai',
+    'dibatalkan',
+  ];
 
   @override
   void initState() {
     super.initState();
-    _loadOrderDetail();
+    _currentStatus = widget.order.statusPemesanan;
+    _checkUserRole();
   }
 
-  Future<void> _loadOrderDetail() async {
+  Future<void> _checkUserRole() async {
+    final role = await ApiService.getUserRole();
     setState(() {
-      _isLoading = true;
+      _isOwner = role?.toLowerCase() == 'owner';
+    });
+  }
+
+  Future<void> _updateStatus(String newStatus) async {
+    setState(() {
+      _isUpdating = true;
     });
 
     try {
-      final detail = await ApiService.getOrderDetail(widget.orderId);
+      final token = await ApiService.getToken();
+      if (token == null) {
+        throw Exception('Token not found');
+      }
 
-      setState(() {
-        _orderDetail = detail;
-        _isLoading = false;
-      });
+      final success = await ApiService.updateOrderStatus(
+        token,
+        widget.order.id,
+        newStatus,
+      );
+
+      if (success) {
+        setState(() {
+          _currentStatus = newStatus;
+          _isUpdating = false;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Status berhasil diperbarui'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      }
     } catch (e) {
       setState(() {
-        _isLoading = false;
+        _isUpdating = false;
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal update status: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     }
   }
 
-  String _formatCurrency(dynamic amount) {
-    final value = amount is int
-        ? amount.toDouble()
-        : (amount as num).toDouble();
-    return 'Rp ${value.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}';
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'dipesan':
+        return Colors.blue;
+      case 'disiapkan':
+        return Colors.orange;
+      case 'dimasak':
+        return Colors.deepOrange;
+      case 'diantar':
+        return Colors.purple;
+      case 'selesai':
+        return Colors.green;
+      case 'dibatalkan':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  IconData _getStatusIcon(String status) {
+    switch (status.toLowerCase()) {
+      case 'dipesan':
+        return Icons.shopping_cart;
+      case 'disiapkan':
+        return Icons.inventory_2;
+      case 'dimasak':
+        return Icons.restaurant;
+      case 'diantar':
+        return Icons.delivery_dining;
+      case 'selesai':
+        return Icons.check_circle;
+      case 'dibatalkan':
+        return Icons.cancel;
+      default:
+        return Icons.info;
+    }
+  }
+
+  void _showStatusDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Ubah Status Pemesanan'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: _statusList.map((status) {
+            return RadioListTile<String>(
+              title: Text(
+                status.toUpperCase(),
+                style: TextStyle(
+                  color: _getStatusColor(status),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              value: status,
+              groupValue: _currentStatus,
+              onChanged: (value) {
+                Navigator.pop(context);
+                if (value != null && value != _currentStatus) {
+                  _updateStatus(value);
+                }
+              },
+            );
+          }).toList(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Batal'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Detail Pesanan'),
-        backgroundColor: const Color(0xFF635BFF),
-        foregroundColor: Colors.white,
+        title: Text('Order #${widget.order.orderCode}'),
+        backgroundColor: Colors.deepPurple,
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _orderDetail == null
-          ? const Center(child: Text('Order not found'))
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Order Info
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEDE6FF),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Status Card
+            Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          'Order Code',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade600,
-                          ),
+                        const Text(
+                          'Status Pembayaran',
+                          style: TextStyle(fontSize: 14, color: Colors.grey),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _orderDetail!['order_code'],
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
                           ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Tanggal',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade600,
+                          decoration: BoxDecoration(
+                            color: widget.order.status == 'paid'
+                                ? Colors.green.withOpacity(0.2)
+                                : Colors.orange.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(20),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _orderDetail!['created_at'],
-                          style: const TextStyle(fontSize: 14),
+                          child: Text(
+                            widget.order.status.toUpperCase(),
+                            style: TextStyle(
+                              color: widget.order.status == 'paid'
+                                  ? Colors.green
+                                  : Colors.orange,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
                         ),
                       ],
                     ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Items List
-                  const Text(
-                    'Item Pesanan',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 12),
-
-                  ...(_orderDetail!['items'] as List).map((item) {
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey.shade200),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 60,
-                            height: 60,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFEDE6FF),
-                              borderRadius: BorderRadius.circular(12),
+                    const SizedBox(height: 16),
+                    const Divider(),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Status Pemesanan',
+                          style: TextStyle(fontSize: 14, color: Colors.grey),
+                        ),
+                        Row(
+                          children: [
+                            Icon(
+                              _getStatusIcon(_currentStatus),
+                              color: _getStatusColor(_currentStatus),
+                              size: 20,
                             ),
-                            child: const Icon(
-                              Icons.fastfood,
-                              color: Color(0xFF635BFF),
+                            const SizedBox(width: 8),
+                            Text(
+                              _currentStatus.toUpperCase(),
+                              style: TextStyle(
+                                color: _getStatusColor(_currentStatus),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  item['item_name'],
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '${item['quantity']}x ${_formatCurrency(item['price'])}',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey.shade600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Text(
-                            _formatCurrency(item['subtotal']),
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF635BFF),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-
-                  const SizedBox(height: 24),
-
-                  // Total
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF5F5F5),
-                      borderRadius: BorderRadius.circular(12),
+                          ],
+                        ),
+                      ],
                     ),
-                    child: Row(
+                    if (_isOwner) ...[
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: _isUpdating ? null : _showStatusDialog,
+                          icon: _isUpdating
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white,
+                                    ),
+                                  ),
+                                )
+                              : const Icon(Icons.edit),
+                          label: Text(
+                            _isUpdating ? 'Memperbarui...' : 'Ubah Status',
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.deepPurple,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Order Info
+            Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Informasi Pesanan',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildInfoRow('Kode Order', widget.order.orderCode),
+                    _buildInfoRow('Tanggal', widget.order.createdAt),
+                    _buildInfoRow(
+                      'Total Item',
+                      '${widget.order.itemsCount} item',
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Items List
+            Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Detail Pesanan',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    ...widget.order.items.map((item) => _buildItemCard(item)),
+                    const Divider(height: 24),
+                    Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text(
@@ -200,19 +346,78 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                           ),
                         ),
                         Text(
-                          _formatCurrency(_orderDetail!['total_amount']),
+                          'Rp ${widget.order.totalAmount.toStringAsFixed(0)}',
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF635BFF),
+                            color: Colors.deepPurple,
                           ),
                         ),
                       ],
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(color: Colors.grey)),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildItemCard(OrderItem item) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.itemName,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${item.quantity}x @ Rp ${item.price.toStringAsFixed(0)}',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            'Rp ${item.subtotal.toStringAsFixed(0)}',
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+              color: Colors.deepPurple,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

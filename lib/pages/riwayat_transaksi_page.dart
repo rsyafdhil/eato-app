@@ -1,3 +1,4 @@
+import 'package:eato_app/models/order.dart';
 import 'package:flutter/material.dart';
 import 'profile_page.dart';
 import 'home_page.dart';
@@ -170,11 +171,12 @@ class _RiwayatTransaksiPageState extends State<RiwayatTransaksiPage> {
                               total: _formatCurrency(order['total_amount']),
                               onTap: () {
                                 // Navigate to order detail
+                                final orderModel = Order.fromJson(order);
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                     builder: (_) =>
-                                        OrderDetailPage(orderId: order['id']),
+                                        OrderDetailPage(order: orderModel),
                                   ),
                                 );
                               },
