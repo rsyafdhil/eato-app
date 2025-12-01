@@ -15,99 +15,85 @@ class ProfilePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF7F5FF), // background lembut
       body: SafeArea(
         child: Column(
           children: [
-            const SizedBox(height: 50),
+            const SizedBox(height: 40),
 
-            // HEADER
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const CircleAvatar(
-                    radius: 45,
-                    backgroundColor: Color(0xFFD9D9D9),
-                    child: Icon(
-                      Icons.person,
-                      size: 55,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(width: 22),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            username,
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          const Icon(
-                            Icons.edit,
-                            size: 20,
-                            color: Color(0xFF635BFF),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        phoneNumber,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 55),
-
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  "User Information",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+            // ===================== AVATAR =====================
+            const CircleAvatar(
+              radius: 55,
+              backgroundColor: Colors.white,
+              child: Icon(
+                Icons.person,
+                size: 60,
+                color: Colors.grey,
               ),
             ),
 
             const SizedBox(height: 16),
 
+            // ===================== USERNAME =====================
+            Text(
+              username,
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
+            const SizedBox(height: 4),
+
+            Text(
+              "$username@example.com",
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.grey,
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // ===================== STAT BOX =====================
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _statCard("16", "Orders", const Color(0xFFBFA5FF)),
+                  _statCard("3", "Favorites", const Color(0xFFECEAFF)),
+                  _statCard("10", "Reviews", const Color(0xFFE3E1F7)),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 28),
+
+            // ===================== MENU CARD =====================
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEDE6FF),
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 5),
+                    )
+                  ],
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Column(
                   children: [
-                    _menuItem(Icons.favorite_border, "Favourites"),
-                    _divider(),
-                    _menuItem(Icons.person_outline, "Personal Information"),
-                    _divider(),
-                    _menuItem(Icons.help_outline, "Helps & Support"),
-                    _divider(),
-                    _menuItem(Icons.payment, "Payment"),
-                    _divider(),
-                    _menuItem(Icons.logout, "Log Out", isLogout: true),
+                    _menuItem(Icons.person, "Profile", "Edit Profile"),
+                    const Divider(height: 25),
+                    _menuItem(Icons.favorite, "Favorites", "Favorites"),
+                    const Divider(height: 25),
+                    _menuItem(Icons.logout, "Log Out", "Log out", isLogout: true),
                   ],
                 ),
               ),
@@ -115,7 +101,7 @@ class ProfilePage extends StatelessWidget {
 
             const Spacer(),
 
-            // ====================== BOTTOM NAV ======================
+            // ===================== BOTTOM NAV (TIDAK DIUBAH) =====================
             Container(
               height: 60,
               decoration: const BoxDecoration(
@@ -155,48 +141,83 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  Widget _menuItem(IconData icon, String title, {bool isLogout = false}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      child: Row(
+  // ===================== STAT ITEM WIDGET =====================
+  Widget _statCard(String number, String label, Color bgColor) {
+    return Container(
+      width: 95,
+      height: 120,
+      padding: const EdgeInsets.symmetric(vertical: 18),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            icon,
-            size: 20,
-            color: isLogout ? Colors.red : Colors.black87,
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              title,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: isLogout ? Colors.red : Colors.black87,
-              ),
+          Text(
+            number,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
             ),
           ),
-          const Icon(
-            Icons.arrow_forward_ios,
-            size: 14,
-            color: Colors.grey,
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 12),
           ),
         ],
       ),
     );
   }
 
-  Widget _divider() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Container(
-        height: 1,
-        color: Colors.white,
-      ),
+  // ===================== MENU ITEM WIDGET =====================
+  Widget _menuItem(IconData icon, String title, String subtitle,
+      {bool isLogout = false}) {
+    return Row(
+      children: [
+        CircleAvatar(
+          radius: 22,
+          backgroundColor: isLogout
+              ? Colors.black
+              : (title == "Favorites"
+                  ? const Color(0xFFE8D7FF)
+                  : const Color(0xFFFFCE8A)),
+          child: Icon(
+            icon,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                  color: isLogout ? Colors.black : Colors.black,
+                ),
+              ),
+              Text(
+                subtitle,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey,
+                ),
+              )
+            ],
+          ),
+        ),
+        const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+      ],
     );
   }
 }
 
+// ===================== BOTTOM NAV CLASS (TIDAK DIUBAH) =====================
 class _BottomNavItem extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -222,20 +243,16 @@ class _BottomNavItem extends StatelessWidget {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (_) => HomePage(
-                username: username,
-                phoneNumber: phoneNumber,
-              ),
+              builder: (_) =>
+                  HomePage(username: username, phoneNumber: phoneNumber),
             ),
           );
         } else if (index == 1) {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (_) => RiwayatTransaksiPage(
-                username: username,
-                phoneNumber: phoneNumber,
-              ),
+              builder: (_) =>
+                  RiwayatTransaksiPage(username: username, phoneNumber: phoneNumber),
             ),
           );
         }

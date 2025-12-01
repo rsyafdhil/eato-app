@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 import '../services/cart_manager.dart';
+import 'qr_payment_page.dart';
+import '../services/api_services.dart';
+import '../services/cart_manager.dart';
+import '../services/midtrans_services.dart';
+import '../models/tenant_model.dart';
 
 class CheckoutPage extends StatefulWidget {
   const CheckoutPage({super.key});
@@ -37,10 +42,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
   }
 
   String _formatCurrency(double amount) {
-    return 'Rp ${amount.toStringAsFixed(0).replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (Match m) => '${m[1]}.',
-    )}';
+    return 'Rp ${amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}';
   }
 
   @override
@@ -114,7 +116,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
                     )
                   : SingleChildScrollView(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -129,26 +133,25 @@ class _CheckoutPageState extends State<CheckoutPage> {
                           const SizedBox(height: 12),
 
                           // List produk dari cart
-                          ...List.generate(
-                            _cartManager.cartItems.length,
-                            (index) {
-                              final item = _cartManager.cartItems[index];
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 8),
-                                child: _CheckoutProductCard(
-                                  productName: item.title,
-                                  priceText: item.price,
-                                  qty: item.quantity,
-                                  onIncrement: () {
-                                    _updateQuantity(item.id, item.quantity + 1);
-                                  },
-                                  onDecrement: () {
-                                    _updateQuantity(item.id, item.quantity - 1);
-                                  },
-                                ),
-                              );
-                            },
-                          ),
+                          ...List.generate(_cartManager.cartItems.length, (
+                            index,
+                          ) {
+                            final item = _cartManager.cartItems[index];
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: _CheckoutProductCard(
+                                productName: item.title,
+                                priceText: item.price,
+                                qty: item.quantity,
+                                onIncrement: () {
+                                  _updateQuantity(item.id, item.quantity + 1);
+                                },
+                                onDecrement: () {
+                                  _updateQuantity(item.id, item.quantity - 1);
+                                },
+                              ),
+                            );
+                          }),
 
                           const SizedBox(height: 16),
 
@@ -195,12 +198,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                   borderRadius: BorderRadius.circular(30),
                                 ),
                               ),
-                              onPressed: () {
+                              onPressed: () async {
                                 if (_savedAlamat.isEmpty) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
                                       content: Text(
-                                          'Silakan isi alamat terlebih dahulu'),
+                                        'Silakan isi alamat terlebih dahulu',
+                                      ),
                                       duration: Duration(seconds: 2),
                                       backgroundColor: Colors.orange,
                                     ),
@@ -208,44 +212,105 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                   return;
                                 }
 
+                                // Show loading
                                 showDialog(
                                   context: context,
-                                  builder: (context) => AlertDialog(
-                                    title: const Text('Konfirmasi Pembayaran'),
-                                    content: Text(
-                                      'Total pembayaran: ${_formatCurrency(total)}\n\nLanjutkan pembayaran?',
-                                    ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(context),
-                                        child: const Text('Batal'),
-                                      ),
-                                      ElevatedButton(
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor:
-                                              const Color(0xFF635BFF),
-                                        ),
-                                        onPressed: () {
-                                          _cartManager.clearCart();
-                                          Navigator.pop(context); // Close dialog
-                                          Navigator.pop(context); // Back to toko
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
-                                            const SnackBar(
-                                              content: Text(
-                                                  'Pembayaran berhasil!'),
-                                              backgroundColor: Colors.green,
-                                            ),
-                                          );
-                                        },
-                                        child: const Text(
-                                          'Bayar',
-                                          style: TextStyle(color: Colors.white),
-                                        ),
-                                      ),
-                                    ],
+                                  barrierDismissible: false,
+                                  builder: (context) => const Center(
+                                    child: CircularProgressIndicator(),
                                   ),
                                 );
+
+                                try {
+                                  final userId = await ApiService.getUserId();
+
+                                  if (userId == null) {
+                                    throw 'Gagal mengambil userId';
+                                  }
+
+                                  final items = _cartManager.cartItems.map((
+                                    item,
+                                  ) {
+                                    return {
+                                      'item_id': int.parse(item.id),
+                                      'quantity': item.quantity,
+                                    };
+                                  }).toList();
+
+                                  final result =
+                                      await ApiService.createOrderWithPayment(
+                                        userId: userId,
+                                        items: items,
+                                      );
+
+                                  print(
+                                    '>>> Checkout Result: $result',
+                                  ); // Debug
+
+                                  Navigator.pop(context); // Close loading
+
+                                  // Cek apakah berhasil
+                                  if (result['success'] == true &&
+                                      result['data'] != null) {
+                                    final qrCodeUrl =
+                                        result['data']['qr_code_url'];
+                                    final orderId = result['data']['order_id'];
+
+                                    // Validasi data
+                                    if (qrCodeUrl == null || orderId == null) {
+                                      throw 'QR Code URL atau Order ID tidak ditemukan';
+                                    }
+
+                                    // Buka halaman QR payment
+                                    final paymentSuccess = await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => QrPaymentPage(
+                                          qrCodeUrl: qrCodeUrl,
+                                          orderId: orderId,
+                                          totalAmount: total,
+                                        ),
+                                      ),
+                                    );
+
+                                    if (paymentSuccess == true) {
+                                      _cartManager.clearCart();
+                                      Navigator.pop(context);
+
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Pembayaran berhasil!'),
+                                          backgroundColor: Colors.green,
+                                        ),
+                                      );
+                                    }
+                                  } else {
+                                    // Handle error
+                                    final message =
+                                        result['message'] ??
+                                        'Terjadi kesalahan';
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Error: $message'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                } catch (e) {
+                                  if (Navigator.canPop(context)) {
+                                    Navigator.pop(context);
+                                  }
+
+                                  print('>>> Checkout Error: $e'); // Debug
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Error: $e'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
                               },
                               child: Text(
                                 "Bayar ${_formatCurrency(total)}",
@@ -339,10 +404,7 @@ class _CheckoutProductCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   priceText,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey,
-                  ),
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
                 ),
                 const SizedBox(height: 6),
 
@@ -360,11 +422,7 @@ class _CheckoutProductCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: const Center(
-                          child: Icon(
-                            Icons.add,
-                            size: 16,
-                            color: Colors.white,
-                          ),
+                          child: Icon(Icons.add, size: 16, color: Colors.white),
                         ),
                       ),
                     ),
@@ -441,10 +499,7 @@ class _AlamatCard extends StatelessWidget {
         children: [
           const Text(
             "Tujuan",
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           TextField(
@@ -519,10 +574,7 @@ class _AlamatCard extends StatelessWidget {
                 onPressed: onSave,
                 child: const Text(
                   "Simpan",
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.white,
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.white),
                 ),
               ),
             ),
@@ -567,33 +619,20 @@ class _FeeCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _FeeRow(
-            label: 'Subtotal',
-            value: formatCurrency(subtotal),
-          ),
+          _FeeRow(label: 'Subtotal', value: formatCurrency(subtotal)),
           const SizedBox(height: 4),
           _FeeRow(
             label: 'Biaya Pengiriman',
             value: formatCurrency(deliveryFee),
           ),
           const SizedBox(height: 4),
-          _FeeRow(
-            label: 'Biaya Layanan',
-            value: formatCurrency(serviceFee),
-          ),
+          _FeeRow(label: 'Biaya Layanan', value: formatCurrency(serviceFee)),
           const SizedBox(height: 4),
-          _FeeRow(
-            label: 'Pajak (10%)',
-            value: formatCurrency(tax),
-          ),
+          _FeeRow(label: 'Pajak (10%)', value: formatCurrency(tax)),
           const SizedBox(height: 8),
           const Divider(),
           const SizedBox(height: 4),
-          _FeeRow(
-            label: 'Total',
-            value: formatCurrency(total),
-            isBold: true,
-          ),
+          _FeeRow(label: 'Total', value: formatCurrency(total), isBold: true),
         ],
       ),
     );

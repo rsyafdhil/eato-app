@@ -7,7 +7,7 @@ class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key, required this.title});
 
   final String title;
-  
+
   @override
   State<RegisterPage> createState() => _RegisterPageState();
 }
@@ -17,7 +17,8 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController nameController = TextEditingController();
-  final TextEditingController passwordConfirmationController = TextEditingController();
+  final TextEditingController passwordConfirmationController =
+      TextEditingController();
 
   bool isLoading = false;
 
@@ -36,9 +37,9 @@ class _RegisterPageState extends State<RegisterPage> {
 
     // Check password match
     if (passwordController.text != passwordConfirmationController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Passwords do not match')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Passwords do not match')));
       return;
     }
 
@@ -69,10 +70,8 @@ class _RegisterPageState extends State<RegisterPage> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => HomePage(
-              username: username,
-              phoneNumber: phoneNumber,
-            ),
+            builder: (context) =>
+                HomePage(username: username, phoneNumber: phoneNumber),
           ),
         );
       } else {
@@ -88,9 +87,9 @@ class _RegisterPageState extends State<RegisterPage> {
         isLoading = false;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error: $e")));
     }
   }
 
@@ -107,7 +106,10 @@ class _RegisterPageState extends State<RegisterPage> {
 
               Text(
                 widget.title,
-                style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 40,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
 
               const SizedBox(height: 40),
@@ -146,7 +148,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
                 style: const TextStyle(fontSize: 14),
               ),
-              
+
               const SizedBox(height: 20),
 
               const Align(
@@ -189,7 +191,10 @@ class _RegisterPageState extends State<RegisterPage> {
 
               const Align(
                 alignment: Alignment.centerLeft,
-                child: Text("Password Confirmation*", style: TextStyle(fontSize: 14)),
+                child: Text(
+                  "Password Confirmation*",
+                  style: TextStyle(fontSize: 14),
+                ),
               ),
               const SizedBox(height: 6),
               TextField(
