@@ -462,68 +462,32 @@ class ApiService {
     }
   }
 
-  Future<List> fetchOrders(String token, String role) async {
-    String url;
-
-    if (role == 'merchant') {
-      url = 'https://your-api.com/api/merchant/orders';
-    } else {
-      url = 'https://your-api.com/api/orders';
-    }
-
+  static Future<List<dynamic>> getUserOrders(String token) async {
     final response = await http.get(
-      Uri.parse(url),
+      Uri.parse('$baseUrl/orders'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
       },
     );
 
+    print('>>> getUserOrders Status: ${response.statusCode}');
+    print('>>> getUserOrders Body: ${response.body}');
+
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      return data['data']; // list orders
-    } else {
-      throw Exception('Failed to fetch orders');
-    }
-  }
 
-  static Future<List<dynamic>> getUserOrders(int userId) async {
-    try {
-      final headers = await _getHeaders(); // Ambil headers dengan token
-
-      print('>>> getUserOrders: userId=$userId');
-      print('>>> getUserOrders: headers=$headers');
-
-      final response = await http.get(
-        Uri.parse('$baseUrl/orders'), // Endpoint spesifik user
-        headers: headers,
-      );
-
-      print('>>> getUserOrders: Status=${response.statusCode}');
-      print('>>> getUserOrders: Body=${response.body}');
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-
-        if (data['success'] == true) {
-          final orders = data['data'] ?? [];
-          print('>>> getUserOrders: Total orders=${orders.length}');
-          return orders;
-        }
-
-        return [];
-      } else {
-        print('>>> getUserOrders: ERROR - ${response.body}');
-        throw Exception('Failed to fetch orders: ${response.body}');
+      if (data['success'] == true && data['data'] != null) {
+        return data['data'];
       }
-    } catch (e, stackTrace) {
-      print('>>> getUserOrders: EXCEPTION=$e');
-      print('>>> getUserOrders: Stack=$stackTrace');
       return [];
+    } else {
+      throw Exception('Failed to fetch orders: ${response.body}');
     }
   }
 
   // Update status pemesanan (owner)
+  // ✅ 2. Update Status Pemesanan (Khusus Owner/Merchant)
   static Future<void> updateStatusPemesanan(int orderId, String status) async {
     try {
       final token = await getToken();
@@ -541,8 +505,8 @@ class ApiService {
         body: json.encode({'status_pemesanan': status}),
       );
 
-      print('>>> Update Status: ${response.statusCode}');
-      print('>>> Update Response: ${response.body}');
+      print('>>> updateStatusPemesanan Status: ${response.statusCode}');
+      print('>>> updateStatusPemesanan Body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -558,21 +522,40 @@ class ApiService {
     }
   }
 
-  static Future<Map<String, dynamic>?> getOrderDetail(int orderId) async {
+  // ✅ 3. Get Order Detail (Universal - untuk semua role)
+  static Future<Map<String, dynamic>> getOrderDetail(int orderId) async {
     try {
+      final token = await getToken();
+
+      if (token == null) {
+        throw 'Token not found';
+      }
+
       final response = await http.get(
-        Uri.parse("$baseUrl/orders/$orderId"),
-        headers: _getHeaders(),
+        Uri.parse('$baseUrl/orders/$orderId'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
       );
 
+      print('>>> getOrderDetail Status: ${response.statusCode}');
+      print('>>> getOrderDetail Body: ${response.body}');
+
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return data['data'];
+        final data = jsonDecode(response.body);
+
+        if (data['success'] == true && data['data'] != null) {
+          return data['data'];
+        }
+
+        return data;
+      } else {
+        throw Exception('Failed to fetch order detail: ${response.body}');
       }
-      return null;
     } catch (e) {
-      print('Error fetching order detail: $e');
-      return null;
+      print('>>> getOrderDetail ERROR: $e');
+      throw Exception('Error fetching order detail: $e');
     }
   }
 }

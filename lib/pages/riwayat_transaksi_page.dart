@@ -34,14 +34,17 @@ class _RiwayatTransaksiPageState extends State<RiwayatTransaksiPage> {
     });
 
     try {
-      // Ambil userId dari backend
-      final userId = await ApiService.getUserId();
+      // Ambil token dari storage
+      final token = await ApiService.getToken();
 
-      if (userId == null) {
-        throw Exception('User not logged in');
+      if (token == null) {
+        // Redirect ke login jika token tidak ada
+        Navigator.pushReplacementNamed(context, '/login');
+        return;
       }
 
-      final orders = await ApiService.getUserOrders(userId);
+      // Panggil getUserOrders dengan token
+      final orders = await ApiService.getUserOrders(token); // ✅ Tambahkan token
 
       setState(() {
         _orders = orders;
