@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_services.dart';
 import 'register_page.dart';
 import 'home_page.dart';
@@ -35,26 +36,62 @@ class _LoginPageState extends State<LoginPage> {
         passwordController.text,
       );
 
-      setState(() {
-        isLoading = false;
-      });
-
       if (result['success'] == true) {
-        // Get user data
-        final userData = result['data']['user'];
-        final username = userData['name'] ?? 'User';
-        final phoneNumber = userData['nomor_telefon'] ?? '';
+        final prefs = await SharedPreferences.getInstance();
 
-        // Navigate to home page
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => HomePage(
-              username: username,
-              phoneNumber: phoneNumber,
+        final token = result['access_token'] ?? result['data']?['token'];
+        if (token != null) {
+          await prefs.setString('token', token);
+          print('✅ Token tersimpan');
+          print(token);
+          ApiService.setToken(token);
+          print('token set : $token');
+
+          final checkToken = ApiService.getToken();
+          print('get token : $token');
+        }
+
+        // ✅ Coba dua kemungkinan struktur
+        final userData = result['user'] ?? result['data']?['user'];
+
+        print('📦 User Data: $userData');
+
+        if (userData != null) {
+          // Simpan role
+          if (userData['role'] != null && userData['role']['name'] != null) {
+            final roleName = userData['role']['name'].toString().toLowerCase();
+            await prefs.setString('user_role', roleName);
+            print('✅ Role tersimpan: $roleName');
+          }
+
+          // Simpan tenant_id
+          if (userData['tenant_id'] != null) {
+            await prefs.setInt('tenant_id', userData['tenant_id']);
+            print('✅ Tenant ID: ${userData['tenant_id']}');
+          }
+
+          // Simpan user info
+          await prefs.setInt('user_id', userData['id']);
+          await prefs.setString('user_name', userData['name'] ?? '');
+          await prefs.setString('user_email', userData['email'] ?? '');
+        }
+
+        // Simpan token
+
+        // ✅ AMBIL username & phoneNumber dari userData
+        final username = userData?['name'] ?? 'User';
+        final phoneNumber = userData?['nomor_telefon'] ?? '';
+
+        // Navigate
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) =>
+                  HomePage(username: username, phoneNumber: phoneNumber),
             ),
-          ),
-        );
+          );
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -63,14 +100,17 @@ class _LoginPageState extends State<LoginPage> {
           ),
         );
       }
+      setState(() {
+        isLoading = false;
+      });
     } catch (e) {
       setState(() {
         isLoading = false;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error: $e")));
     }
   }
 
@@ -142,7 +182,7 @@ class _LoginPageState extends State<LoginPage> {
               ),
 
               const SizedBox(height: 10),
-              
+
               SizedBox(
                 width: double.infinity,
                 height: 55,
@@ -155,9 +195,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                   child: isLoading
-                      ? const CircularProgressIndicator(
-                          color: Colors.white,
-                        )
+                      ? const CircularProgressIndicator(color: Colors.white)
                       : const Text(
                           "Sign In",
                           style: TextStyle(fontSize: 18, color: Colors.white),
@@ -179,7 +217,8 @@ class _LoginPageState extends State<LoginPage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const RegisterPage(title: "EatO"),
+                          builder: (context) =>
+                              const RegisterPage(title: "EatO"),
                         ),
                       );
                     },

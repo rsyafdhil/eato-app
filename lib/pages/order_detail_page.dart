@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../services/api_services.dart'; // Sesuaikan dengan path kamu
+import 'package:shared_preferences/shared_preferences.dart';
+import '../services/api_services.dart';
 import '../models/order.dart';
 
 class OrderDetailPage extends StatefulWidget {
@@ -15,15 +16,9 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
   bool _isOwner = false;
   bool _isUpdating = false;
   late String _currentStatus;
+  bool _isLoadingRole = true;
 
-  final List<String> _statusList = [
-    'dipesan',
-    'disiapkan',
-    'dimasak',
-    'diantar',
-    'selesai',
-    'dibatalkan',
-  ];
+  final List<String> _statusList = ['dipesan', 'dimasak', 'diantarkan'];
 
   @override
   void initState() {
@@ -33,10 +28,24 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
   }
 
   Future<void> _checkUserRole() async {
-    final role = await ApiService.getUserRole();
-    setState(() {
-      _isOwner = role?.toLowerCase() == 'owner';
-    });
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final roleName = prefs.getString('user_role');
+
+      print('>>> User Role: $roleName'); // Debug
+
+      setState(() {
+        _isOwner = roleName?.toLowerCase() == 'owner';
+        _isLoadingRole = false;
+      });
+
+      print('>>> Is Owner: $_isOwner'); // Debug
+    } catch (e) {
+      print('>>> Error checking role: $e');
+      setState(() {
+        _isLoadingRole = false;
+      });
+    }
   }
 
   Future<void> _updateStatus(String newStatus) async {
@@ -45,31 +54,20 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
     });
 
     try {
-      final token = await ApiService.getToken();
-      if (token == null) {
-        throw Exception('Token not found');
-      }
+      await ApiService.updateStatusPemesanan(widget.order.id, newStatus);
 
-      final success = await ApiService.updateOrderStatus(
-        token,
-        widget.order.id,
-        newStatus,
-      );
+      setState(() {
+        _currentStatus = newStatus;
+        _isUpdating = false;
+      });
 
-      if (success) {
-        setState(() {
-          _currentStatus = newStatus;
-          _isUpdating = false;
-        });
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Status berhasil diperbarui'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Status berhasil diperbarui'),
+            backgroundColor: Colors.green,
+          ),
+        );
       }
     } catch (e) {
       setState(() {
@@ -90,17 +88,11 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'dipesan':
-        return Colors.blue;
-      case 'disiapkan':
         return Colors.orange;
       case 'dimasak':
-        return Colors.deepOrange;
-      case 'diantar':
-        return Colors.purple;
-      case 'selesai':
+        return Colors.blue;
+      case 'diantarkan':
         return Colors.green;
-      case 'dibatalkan':
-        return Colors.red;
       default:
         return Colors.grey;
     }
@@ -110,16 +102,10 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
     switch (status.toLowerCase()) {
       case 'dipesan':
         return Icons.shopping_cart;
-      case 'disiapkan':
-        return Icons.inventory_2;
       case 'dimasak':
         return Icons.restaurant;
-      case 'diantar':
+      case 'diantarkan':
         return Icons.delivery_dining;
-      case 'selesai':
-        return Icons.check_circle;
-      case 'dibatalkan':
-        return Icons.cancel;
       default:
         return Icons.info;
     }
@@ -133,22 +119,67 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: _statusList.map((status) {
-            return RadioListTile<String>(
-              title: Text(
-                status.toUpperCase(),
-                style: TextStyle(
-                  color: _getStatusColor(status),
-                  fontWeight: FontWeight.bold,
+            final isSelected = status == _currentStatus;
+            final color = _getStatusColor(status);
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: InkWell(
+                onTap: () {
+                  Navigator.pop(context);
+                  if (!isSelected) {
+                    _updateStatus(status);
+                  }
+                },
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? color.withOpacity(0.1)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: isSelected ? color : Colors.grey.shade300,
+                      width: isSelected ? 2 : 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 20,
+                        height: 20,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isSelected ? color : Colors.transparent,
+                          border: Border.all(color: color, width: 2),
+                        ),
+                        child: isSelected
+                            ? const Icon(
+                                Icons.check,
+                                size: 14,
+                                color: Colors.white,
+                              )
+                            : null,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        status.toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                          color: isSelected ? color : Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              value: status,
-              groupValue: _currentStatus,
-              onChanged: (value) {
-                Navigator.pop(context);
-                if (value != null && value != _currentStatus) {
-                  _updateStatus(value);
-                }
-              },
             );
           }).toList(),
         ),
@@ -162,12 +193,22 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
     );
   }
 
+  String _formatCurrency(double amount) {
+    return 'Rp ${amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}';
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_isLoadingRole) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text('Order #${widget.order.orderCode}'),
-        backgroundColor: Colors.deepPurple,
+        backgroundColor: const Color(0xFF635BFF),
+        foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -185,6 +226,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Status Pembayaran
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -216,9 +258,12 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                         ),
                       ],
                     ),
+
                     const SizedBox(height: 16),
                     const Divider(),
                     const SizedBox(height: 8),
+
+                    // Status Pemesanan
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -246,6 +291,8 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                         ),
                       ],
                     ),
+
+                    // ✅ Dropdown HANYA muncul kalau owner
                     if (_isOwner) ...[
                       const SizedBox(height: 12),
                       SizedBox(
@@ -268,7 +315,8 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                             _isUpdating ? 'Memperbarui...' : 'Ubah Status',
                           ),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.deepPurple,
+                            backgroundColor: const Color(0xFF635BFF),
+                            foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
@@ -281,6 +329,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                 ),
               ),
             ),
+
             const SizedBox(height: 16),
 
             // Order Info
@@ -312,6 +361,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                 ),
               ),
             ),
+
             const SizedBox(height: 16),
 
             // Items List
@@ -346,11 +396,11 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                           ),
                         ),
                         Text(
-                          'Rp ${widget.order.totalAmount.toStringAsFixed(0)}',
+                          _formatCurrency(widget.order.totalAmount),
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: Colors.deepPurple,
+                            color: Color(0xFF635BFF),
                           ),
                         ),
                       ],
@@ -389,6 +439,20 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
       ),
       child: Row(
         children: [
+          Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              color: const Color(0xFFEDE6FF),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.fastfood,
+              color: Color(0xFF635BFF),
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -402,18 +466,18 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${item.quantity}x @ Rp ${item.price.toStringAsFixed(0)}',
+                  '${item.quantity}x @ ${_formatCurrency(item.price)}',
                   style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                 ),
               ],
             ),
           ),
           Text(
-            'Rp ${item.subtotal.toStringAsFixed(0)}',
+            _formatCurrency(item.subtotal),
             style: const TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 14,
-              color: Colors.deepPurple,
+              color: Color(0xFF635BFF),
             ),
           ),
         ],

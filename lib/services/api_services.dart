@@ -495,33 +495,39 @@ class ApiService {
   // Update status pemesanan (owner)
   // ✅ 2. Update Status Pemesanan (Khusus Owner/Merchant)
   // Update status pemesanan (hanya owner)
-  static Future<bool> updateOrderStatus(
-    String token,
-    int orderId,
-    String statusPemesanan,
-  ) async {
+  static Future<void> updateStatusPemesanan(int orderId, String status) async {
     try {
-      final response = await http.patch(
-        Uri.parse('$baseUrl/orders/$orderId/status'),
+      final token = await getToken();
+
+      if (token == null) {
+        throw 'Token not found';
+      }
+
+      final response = await http.put(
+        Uri.parse(
+          '$baseUrl/orders/$orderId/status-pemesanan',
+        ), // ✅ Endpoint yang benar
         headers: {
           'Authorization': 'Bearer $token',
-          'Accept': 'application/json',
           'Content-Type': 'application/json',
         },
-        body: json.encode({'status_pemesanan': statusPemesanan}),
+        body: json.encode({'status_pemesanan': status}),
       );
 
-      print('>>> updateOrderStatus Status: ${response.statusCode}');
-      print('>>> updateOrderStatus Body: ${response.body}');
+      print('>>> updateStatusPemesanan Status: ${response.statusCode}');
+      print('>>> updateStatusPemesanan Body: ${response.body}');
 
       if (response.statusCode == 200) {
-        return true;
+        final data = jsonDecode(response.body);
+        if (data['success'] != true) {
+          throw data['message'] ?? 'Failed to update status';
+        }
       } else {
-        throw Exception('Failed to update order status');
+        throw 'Failed to update status: ${response.statusCode}';
       }
     } catch (e) {
-      print('Error updating order status: $e');
-      throw Exception('Error: $e');
+      print('>>> updateStatusPemesanan ERROR: $e');
+      throw Exception('Error updating status: $e');
     }
   }
 

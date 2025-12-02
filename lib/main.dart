@@ -27,41 +27,33 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF635BFF)),
         useMaterial3: true,
       ),
-      initialRoute: '/',
+      initialRoute: '/login',
       routes: {
-        '/': (context) => const LoginPage(),
+        '/login': (context) => const LoginPage(),
         '/register': (context) => const RegisterPage(title: "EatO"),
         '/home': (context) => const MyHomePage(),
         '/daftar_kantin': (context) => const KantinPage(
-          username: 'Guest',  // Added
-          phoneNumber: '0000000000',  // Added
+          username: 'Guest', // Added
+          phoneNumber: '0000000000', // Added
         ),
         '/checkout': (context) => const CheckoutPage(),
-        '/homepage': (context) => const HomePage(
-              username: 'username',
-              phoneNumber: 'phoneNumber',
-            ),
+        '/homepage': (context) =>
+            const HomePage(username: 'username', phoneNumber: 'phoneNumber'),
         '/preview': (context) => const PreviewTokoPage(
-              namaToko: 'Gacor',
-              tenantId: 1,
-              username: 'Guest',
-              phoneNumber: '0000000000',
-            ),
-        '/profile': (context) => const ProfilePage(
-              username: 'saga',
-              phoneNumber: '08943475832',
-            ),
-        '/favorites': (context) => const FavoritePage(
-              username: 's',
-              phoneNumber: 'phoneNumber',
-            ),
-        '/food': (context) => const FoodDetailPage(
-              itemId: 1,
-            ),
+          namaToko: 'Gacor',
+          tenantId: 1,
+          username: 'Guest',
+          phoneNumber: '0000000000',
+        ),
+        '/profile': (context) =>
+            const ProfilePage(username: 'saga', phoneNumber: '08943475832'),
+        '/favorites': (context) =>
+            const FavoritePage(username: 's', phoneNumber: 'phoneNumber'),
+        '/food': (context) => const FoodDetailPage(itemId: 1),
         '/form': (context) => const FormUpdatePage(
-              username: 'username',
-              phoneNumber: 'phoneNumber',
-            ),
+          username: 'username',
+          phoneNumber: 'phoneNumber',
+        ),
       },
     );
   }
