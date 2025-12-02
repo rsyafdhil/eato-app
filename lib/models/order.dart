@@ -2,6 +2,9 @@ class Order {
   final int id;
   final String orderCode;
   final int userId;
+  final String customerName; // ✅ Tambah
+  final String customerEmail; // ✅ Tambah
+  final String customerPhone; // ✅ Tambah
   final String status;
   final String statusPemesanan;
   final double totalAmount;
@@ -13,6 +16,9 @@ class Order {
     required this.id,
     required this.orderCode,
     required this.userId,
+    required this.customerName,
+    required this.customerEmail,
+    required this.customerPhone,
     required this.status,
     required this.statusPemesanan,
     required this.totalAmount,
@@ -26,6 +32,9 @@ class Order {
       id: json['id'],
       orderCode: json['order_code'],
       userId: json['user_id'],
+      customerName: json['customer_name'] ?? 'Unknown', // ✅ Tambah
+      customerEmail: json['customer_email'] ?? '', // ✅ Tambah
+      customerPhone: json['customer_phone'] ?? '', // ✅ Tambah
       status: json['status'],
       statusPemesanan: json['status_pemesanan'] ?? 'dipesan',
       totalAmount: double.parse(json['total_amount'].toString()),

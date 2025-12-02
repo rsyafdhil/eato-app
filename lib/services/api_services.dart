@@ -495,39 +495,40 @@ class ApiService {
   // Update status pemesanan (owner)
   // ✅ 2. Update Status Pemesanan (Khusus Owner/Merchant)
   // Update status pemesanan (hanya owner)
-  static Future<void> updateStatusPemesanan(int orderId, String status) async {
+  // ✅ Return Future<bool> bukan Future<void>
+  static Future<bool> updateOrderStatus(
+    int orderId,
+    String statusPemesanan,
+  ) async {
     try {
       final token = await getToken();
 
       if (token == null) {
-        throw 'Token not found';
+        throw Exception('Token not found');
       }
 
-      final response = await http.put(
-        Uri.parse(
-          '$baseUrl/orders/$orderId/status-pemesanan',
-        ), // ✅ Endpoint yang benar
+      final response = await http.patch(
+        Uri.parse('$baseUrl/orders/$orderId/status'),
         headers: {
           'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
           'Content-Type': 'application/json',
         },
-        body: json.encode({'status_pemesanan': status}),
+        body: json.encode({'status_pemesanan': statusPemesanan}),
       );
 
-      print('>>> updateStatusPemesanan Status: ${response.statusCode}');
-      print('>>> updateStatusPemesanan Body: ${response.body}');
+      print('>>> updateOrderStatus Status: ${response.statusCode}');
+      print('>>> updateOrderStatus Body: ${response.body}');
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data['success'] != true) {
-          throw data['message'] ?? 'Failed to update status';
-        }
+        return true; // ✅ Return true kalau berhasil
       } else {
-        throw 'Failed to update status: ${response.statusCode}';
+        print('❌ Failed with status: ${response.statusCode}');
+        return false; // ✅ Return false kalau gagal
       }
     } catch (e) {
-      print('>>> updateStatusPemesanan ERROR: $e');
-      throw Exception('Error updating status: $e');
+      print('❌ Error updating order status: $e');
+      return false; // ✅ Return false kalau error
     }
   }
 

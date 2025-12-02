@@ -25,11 +25,7 @@ class ProfilePage extends StatelessWidget {
             const CircleAvatar(
               radius: 55,
               backgroundColor: Colors.white,
-              child: Icon(
-                Icons.person,
-                size: 60,
-                color: Colors.grey,
-              ),
+              child: Icon(Icons.person, size: 60, color: Colors.grey),
             ),
 
             const SizedBox(height: 16),
@@ -37,20 +33,14 @@ class ProfilePage extends StatelessWidget {
             // ===================== USERNAME =====================
             Text(
               username,
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
 
             const SizedBox(height: 4),
 
             Text(
               "$username@example.com",
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
-              ),
+              style: const TextStyle(fontSize: 14, color: Colors.grey),
             ),
 
             const SizedBox(height: 24),
@@ -59,11 +49,10 @@ class ProfilePage extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   _statCard("16", "Orders", const Color(0xFFBFA5FF)),
                   _statCard("3", "Favorites", const Color(0xFFECEAFF)),
-                  _statCard("10", "Reviews", const Color(0xFFE3E1F7)),
                 ],
               ),
             ),
@@ -83,7 +72,7 @@ class ProfilePage extends StatelessWidget {
                       color: Colors.black.withOpacity(0.05),
                       blurRadius: 10,
                       offset: const Offset(0, 5),
-                    )
+                    ),
                   ],
                   borderRadius: BorderRadius.circular(20),
                 ),
@@ -93,7 +82,12 @@ class ProfilePage extends StatelessWidget {
                     const Divider(height: 25),
                     _menuItem(Icons.favorite, "Favorites", "Favorites"),
                     const Divider(height: 25),
-                    _menuItem(Icons.logout, "Log Out", "Log out", isLogout: true),
+                    _menuItem(
+                      Icons.logout,
+                      "Log Out",
+                      "Log out",
+                      isLogout: true,
+                    ),
                   ],
                 ),
               ),
@@ -156,24 +150,22 @@ class ProfilePage extends StatelessWidget {
         children: [
           Text(
             number,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 6),
-          Text(
-            label,
-            style: const TextStyle(fontSize: 12),
-          ),
+          Text(label, style: const TextStyle(fontSize: 12)),
         ],
       ),
     );
   }
 
   // ===================== MENU ITEM WIDGET =====================
-  Widget _menuItem(IconData icon, String title, String subtitle,
-      {bool isLogout = false}) {
+  Widget _menuItem(
+    IconData icon,
+    String title,
+    String subtitle, {
+    bool isLogout = false,
+  }) {
     return Row(
       children: [
         CircleAvatar(
@@ -181,12 +173,9 @@ class ProfilePage extends StatelessWidget {
           backgroundColor: isLogout
               ? Colors.black
               : (title == "Favorites"
-                  ? const Color(0xFFE8D7FF)
-                  : const Color(0xFFFFCE8A)),
-          child: Icon(
-            icon,
-            color: Colors.white,
-          ),
+                    ? const Color(0xFFE8D7FF)
+                    : const Color(0xFFFFCE8A)),
+          child: Icon(icon, color: Colors.white),
         ),
         const SizedBox(width: 16),
         Expanded(
@@ -203,11 +192,8 @@ class ProfilePage extends StatelessWidget {
               ),
               Text(
                 subtitle,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey,
-                ),
-              )
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
             ],
           ),
         ),
@@ -251,8 +237,10 @@ class _BottomNavItem extends StatelessWidget {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (_) =>
-                  RiwayatTransaksiPage(username: username, phoneNumber: phoneNumber),
+              builder: (_) => RiwayatTransaksiPage(
+                username: username,
+                phoneNumber: phoneNumber,
+              ),
             ),
           );
         }

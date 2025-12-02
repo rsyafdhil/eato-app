@@ -33,7 +33,7 @@ class _PreviewTokoPageState extends State<PreviewTokoPage> {
   List<dynamic> menuToShow = []; // Items to display (with limit)
   Map<String, dynamic>? tenantData;
   String? errorMessage;
-  
+
   final CartManager _cartManager = CartManager();
 
   @override
@@ -50,10 +50,10 @@ class _PreviewTokoPageState extends State<PreviewTokoPage> {
 
     try {
       print('Loading tenant ID: ${widget.tenantId}');
-      
+
       final tenant = await ApiService.getTenantById(widget.tenantId);
       print('Tenant data: $tenant');
-      
+
       final items = await ApiService.getItemsByTenant(widget.tenantId);
       print('Items count: ${items.length}');
       print('Items data: $items');
@@ -69,12 +69,12 @@ class _PreviewTokoPageState extends State<PreviewTokoPage> {
     } catch (e) {
       print('Error loading data: $e');
       if (!mounted) return;
-      
+
       setState(() {
         _isLoading = false;
         errorMessage = e.toString();
       });
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error loading data: $e'),
@@ -87,18 +87,20 @@ class _PreviewTokoPageState extends State<PreviewTokoPage> {
   void _filterMenuByCategory() {
     print('Filtering by category: $_selectedCategory');
     print('Total items: ${allMenuList.length}');
-    
+
     // Filter items based on selected category
     filteredMenuList = allMenuList.where((item) {
       // Access the category_name from the category object
       final categoryObj = item['category'];
-      final categoryName = categoryObj != null 
+      final categoryName = categoryObj != null
           ? (categoryObj['category_name']?.toString().toLowerCase() ?? '')
           : '';
       final selectedCat = _selectedCategory.toLowerCase();
-      
-      print('Item: ${item['item_name']}, Category Name: $categoryName, Match: ${categoryName == selectedCat}');
-      
+
+      print(
+        'Item: ${item['item_name']}, Category Name: $categoryName, Match: ${categoryName == selectedCat}',
+      );
+
       return categoryName == selectedCat;
     }).toList();
 
@@ -106,8 +108,8 @@ class _PreviewTokoPageState extends State<PreviewTokoPage> {
 
     setState(() {
       _alreadyShowAll = false;
-      menuToShow = filteredMenuList.length > 4 
-          ? filteredMenuList.take(4).toList() 
+      menuToShow = filteredMenuList.length > 4
+          ? filteredMenuList.take(4).toList()
           : filteredMenuList;
     });
   }
@@ -204,12 +206,13 @@ class _PreviewTokoPageState extends State<PreviewTokoPage> {
                               style: const TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                                color: Colors.deepPurpleAccent,
                               ),
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              tenantData?['description']?.toString() ?? 'Desc toko',
+                              tenantData?['description']?.toString() ??
+                                  'Desc toko',
                               style: const TextStyle(
                                 fontSize: 12,
                                 color: Colors.white70,
@@ -226,7 +229,10 @@ class _PreviewTokoPageState extends State<PreviewTokoPage> {
 
                 // CATEGORY TABS
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   child: Row(
                     children: [
                       Expanded(
@@ -253,159 +259,166 @@ class _PreviewTokoPageState extends State<PreviewTokoPage> {
                   child: _isLoading
                       ? const Center(child: CircularProgressIndicator())
                       : errorMessage != null
-                          ? Center(
-                              child: Padding(
-                                padding: const EdgeInsets.all(16.0),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const Icon(
-                                      Icons.error_outline,
-                                      size: 64,
-                                      color: Colors.red,
-                                    ),
-                                    const SizedBox(height: 16),
-                                    const Text(
-                                      'Failed to load data',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      errorMessage!,
-                                      textAlign: TextAlign.center,
-                                      style: const TextStyle(color: Colors.grey),
-                                    ),
-                                    const SizedBox(height: 16),
-                                    ElevatedButton(
-                                      onPressed: _loadTenantData,
-                                      child: const Text('Retry'),
-                                    ),
-                                  ],
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.error_outline,
+                                  size: 64,
+                                  color: Colors.red,
+                                ),
+                                const SizedBox(height: 16),
+                                const Text(
+                                  'Failed to load data',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  errorMessage!,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(color: Colors.grey),
+                                ),
+                                const SizedBox(height: 16),
+                                ElevatedButton(
+                                  onPressed: _loadTenantData,
+                                  child: const Text('Retry'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      : SingleChildScrollView(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Menu $_selectedCategory',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
-                            )
-                          : SingleChildScrollView(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 12),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Menu $_selectedCategory',
+                              const SizedBox(height: 8),
+
+                              // Debug info (remove this in production)
+                              if (allMenuList.isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 8.0),
+                                  child: Text(
+                                    'Total: ${allMenuList.length} | $_selectedCategory: ${filteredMenuList.length}',
                                     style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w700,
+                                      fontSize: 10,
+                                      color: Colors.grey,
                                     ),
                                   ),
-                                  const SizedBox(height: 8),
+                                ),
 
-                                  // Debug info (remove this in production)
-                                  if (allMenuList.isNotEmpty)
-                                    Padding(
-                                      padding: const EdgeInsets.only(bottom: 8.0),
-                                      child: Text(
-                                        'Total: ${allMenuList.length} | $_selectedCategory: ${filteredMenuList.length}',
-                                        style: const TextStyle(
-                                          fontSize: 10,
-                                          color: Colors.grey,
+                              // GRID MENU
+                              filteredMenuList.isEmpty
+                                  ? Center(
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(32.0),
+                                        child: Column(
+                                          children: [
+                                            Icon(
+                                              _selectedCategory == 'Makanan'
+                                                  ? Icons.restaurant_menu
+                                                  : Icons.local_cafe,
+                                              size: 64,
+                                              color: Colors.grey,
+                                            ),
+                                            const SizedBox(height: 16),
+                                            Text(
+                                              'Tidak ada $_selectedCategory tersedia',
+                                              style: const TextStyle(
+                                                fontSize: 16,
+                                                color: Colors.grey,
+                                              ),
+                                            ),
+                                            if (allMenuList.isNotEmpty)
+                                              Padding(
+                                                padding: const EdgeInsets.only(
+                                                  top: 8.0,
+                                                ),
+                                                child: Text(
+                                                  'Coba kategori lain',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: Colors.grey.shade600,
+                                                  ),
+                                                ),
+                                              ),
+                                          ],
                                         ),
                                       ),
-                                    ),
-
-                                  // GRID MENU
-                                  filteredMenuList.isEmpty
-                                      ? Center(
-                                          child: Padding(
-                                            padding: const EdgeInsets.all(32.0),
-                                            child: Column(
-                                              children: [
-                                                Icon(
-                                                  _selectedCategory == 'Makanan' 
-                                                      ? Icons.restaurant_menu 
-                                                      : Icons.local_cafe,
-                                                  size: 64,
-                                                  color: Colors.grey,
-                                                ),
-                                                const SizedBox(height: 16),
-                                                Text(
-                                                  'Tidak ada $_selectedCategory tersedia',
-                                                  style: const TextStyle(
-                                                    fontSize: 16,
-                                                    color: Colors.grey,
-                                                  ),
-                                                ),
-                                                if (allMenuList.isNotEmpty)
-                                                  Padding(
-                                                    padding: const EdgeInsets.only(top: 8.0),
-                                                    child: Text(
-                                                      'Coba kategori lain',
-                                                      style: TextStyle(
-                                                        fontSize: 12,
-                                                        color: Colors.grey.shade600,
-                                                      ),
-                                                    ),
-                                                  ),
-                                              ],
-                                            ),
-                                          ),
-                                        )
-                                      : GridView.builder(
-                                          shrinkWrap: true,
-                                          physics:
-                                              const NeverScrollableScrollPhysics(),
-                                          gridDelegate:
-                                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                    )
+                                  : GridView.builder(
+                                      shrinkWrap: true,
+                                      physics:
+                                          const NeverScrollableScrollPhysics(),
+                                      gridDelegate:
+                                          const SliverGridDelegateWithFixedCrossAxisCount(
                                             crossAxisCount: 2,
                                             crossAxisSpacing: 12,
                                             mainAxisSpacing: 10,
                                             childAspectRatio: 3 / 3.5,
                                           ),
-                                          itemCount: menuToShow.length,
-                                          itemBuilder: (context, index) {
-                                            final item = menuToShow[index];
-                                            return _buildMenuItem(item);
-                                          },
-                                        ),
-
-                                  const SizedBox(height: 12),
-
-                                  // TOMBOL LIHAT SEMUA
-                                  if (!_alreadyShowAll && filteredMenuList.length > 4)
-                                    SizedBox(
-                                      width: double.infinity,
-                                      height: 42,
-                                      child: OutlinedButton(
-                                        style: OutlinedButton.styleFrom(
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(24),
-                                          ),
-                                          side: const BorderSide(
-                                            color: Color(0xFF635BFF),
-                                          ),
-                                        ),
-                                        onPressed: () {
-                                          setState(() {
-                                            menuToShow = List.from(filteredMenuList);
-                                            _alreadyShowAll = true;
-                                          });
-                                        },
-                                        child: const Text(
-                                          'Lihat semua',
-                                          style: TextStyle(
-                                            color: Color(0xFF635BFF),
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                      ),
+                                      itemCount: menuToShow.length,
+                                      itemBuilder: (context, index) {
+                                        final item = menuToShow[index];
+                                        return _buildMenuItem(item);
+                                      },
                                     ),
 
-                                  const SizedBox(height: 90),
-                                ],
-                              ),
-                            ),
+                              const SizedBox(height: 12),
+
+                              // TOMBOL LIHAT SEMUA
+                              if (!_alreadyShowAll &&
+                                  filteredMenuList.length > 4)
+                                SizedBox(
+                                  width: double.infinity,
+                                  height: 42,
+                                  child: OutlinedButton(
+                                    style: OutlinedButton.styleFrom(
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(24),
+                                      ),
+                                      side: const BorderSide(
+                                        color: Color(0xFF635BFF),
+                                      ),
+                                    ),
+                                    onPressed: () {
+                                      setState(() {
+                                        menuToShow = List.from(
+                                          filteredMenuList,
+                                        );
+                                        _alreadyShowAll = true;
+                                      });
+                                    },
+                                    child: const Text(
+                                      'Lihat semua',
+                                      style: TextStyle(
+                                        color: Color(0xFF635BFF),
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+
+                              const SizedBox(height: 90),
+                            ],
+                          ),
+                        ),
                 ),
               ],
             ),
@@ -421,9 +434,7 @@ class _PreviewTokoPageState extends State<PreviewTokoPage> {
                     if (cartItemCount > 0) {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(
-                          builder: (_) => const CheckoutPage(),
-                        ),
+                        MaterialPageRoute(builder: (_) => const CheckoutPage()),
                       ).then((_) {
                         setState(() {});
                       });
@@ -492,7 +503,7 @@ class _PreviewTokoPageState extends State<PreviewTokoPage> {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          cartItemCount > 0 
+                          cartItemCount > 0
                               ? 'Keranjang ($cartItemCount)'
                               : 'Keranjang',
                           style: const TextStyle(
@@ -576,7 +587,7 @@ class _PreviewTokoPageState extends State<PreviewTokoPage> {
     final String itemIdStr = item['id'].toString();
     final String itemName = item['item_name']?.toString() ?? 'Unknown';
     final String price = item['price']?.toString() ?? '0';
-      
+
     return InkWell(
       onTap: () {
         Navigator.push(
@@ -631,8 +642,11 @@ class _PreviewTokoPageState extends State<PreviewTokoPage> {
                   child: FutureBuilder<List<dynamic>>(
                     future: ApiService.getFavorites(widget.phoneNumber),
                     builder: (context, snapshot) {
-                      final isFav = snapshot.hasData &&
-                          snapshot.data!.any((fav) => fav['id'].toString() == itemIdStr);
+                      final isFav =
+                          snapshot.hasData &&
+                          snapshot.data!.any(
+                            (fav) => fav['id'].toString() == itemIdStr,
+                          );
 
                       return GestureDetector(
                         onTap: () async {
@@ -731,7 +745,7 @@ class _PreviewTokoPageState extends State<PreviewTokoPage> {
                       onPressed: () {
                         _cartManager.addToCart(itemIdStr, itemName, price);
                         setState(() {});
-                        
+
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
@@ -857,8 +871,9 @@ class _BottomNavItem extends StatelessWidget {
               label,
               style: TextStyle(
                 fontSize: 10,
-                color:
-                    isActive ? const Color(0xFF635BFF) : Colors.grey.shade600,
+                color: isActive
+                    ? const Color(0xFF635BFF)
+                    : Colors.grey.shade600,
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
               ),
             ),

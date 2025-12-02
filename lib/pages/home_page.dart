@@ -25,7 +25,7 @@ class _HomePageState extends State<HomePage> {
   List<dynamic> kantinList = [];
   List<dynamic> recommendedMenu = [];
   bool _isLoading = true;
-  
+
   // Search related variables
   final TextEditingController _searchController = TextEditingController();
   bool _isSearching = false;
@@ -60,16 +60,20 @@ class _HomePageState extends State<HomePage> {
 
     try {
       final tenants = await ApiService.getTenants();
-      
+
       setState(() {
         kantinList = tenants.take(5).toList();
         _isLoading = false;
       });
 
       if (tenants.isNotEmpty) {
-        final items = await ApiService.getItemsByTenant(tenants[0]['id']);
+        List allItems = [];
+        for (var t in tenants) {
+          final items = await ApiService.getItemsByTenant(t['id']);
+          allItems.addAll(items);
+        }
         setState(() {
-          recommendedMenu = items.take(4).toList();
+          recommendedMenu = allItems.take(4).toList();
         });
       }
     } catch (e) {
@@ -77,9 +81,9 @@ class _HomePageState extends State<HomePage> {
         _isLoading = false;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading data: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error loading data: $e')));
       }
     }
   }
@@ -100,13 +104,14 @@ class _HomePageState extends State<HomePage> {
 
     try {
       final allItems = await ApiService.getItems();
-      
+
       final results = allItems.where((item) {
         final itemName = item['item_name']?.toString().toLowerCase() ?? '';
         final description = item['description']?.toString().toLowerCase() ?? '';
         final searchLower = query.toLowerCase();
-        
-        return itemName.contains(searchLower) || description.contains(searchLower);
+
+        return itemName.contains(searchLower) ||
+            description.contains(searchLower);
       }).toList();
 
       setState(() {
@@ -118,9 +123,9 @@ class _HomePageState extends State<HomePage> {
         _isSearchLoading = false;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error searching: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error searching: $e')));
       }
     }
   }
@@ -207,11 +212,14 @@ class _HomePageState extends State<HomePage> {
                           style: const TextStyle(fontSize: 14),
                           cursorColor: const Color(0xFF635BFF),
                           onChanged: (value) {
-                            Future.delayed(const Duration(milliseconds: 500), () {
-                              if (_searchController.text == value) {
-                                _performSearch(value);
-                              }
-                            });
+                            Future.delayed(
+                              const Duration(milliseconds: 500),
+                              () {
+                                if (_searchController.text == value) {
+                                  _performSearch(value);
+                                }
+                              },
+                            );
                           },
                           decoration: const InputDecoration(
                             hintText: "Mau makan apa hari ini",
@@ -256,8 +264,8 @@ class _HomePageState extends State<HomePage> {
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : _isSearching
-                      ? _buildSearchResults()
-                      : _buildMainContent(),
+                  ? _buildSearchResults()
+                  : _buildMainContent(),
             ),
 
             // Bottom Nav
@@ -283,18 +291,11 @@ class _HomePageState extends State<HomePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.search_off,
-              size: 64,
-              color: Colors.grey.shade300,
-            ),
+            Icon(Icons.search_off, size: 64, color: Colors.grey.shade300),
             const SizedBox(height: 16),
             Text(
               'Tidak ada hasil untuk "${_searchController.text}"',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey.shade600,
-              ),
+              style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
             ),
           ],
         ),
@@ -306,10 +307,7 @@ class _HomePageState extends State<HomePage> {
       children: [
         Text(
           'Hasil Pencarian (${_searchResults.length})',
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         GridView.builder(
@@ -329,9 +327,7 @@ class _HomePageState extends State<HomePage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => FoodDetailPage(
-                      itemId: item['id'],
-                    ),
+                    builder: (_) => FoodDetailPage(itemId: item['id']),
                   ),
                 );
               },
@@ -419,10 +415,7 @@ class _HomePageState extends State<HomePage> {
               children: [
                 const Text(
                   "Kantin",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                 ),
                 TextButton(
                   onPressed: () {
@@ -452,8 +445,11 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
                       SizedBox(width: 4),
-                      Icon(Icons.arrow_forward,
-                          size: 16, color: Color(0xFF635BFF)),
+                      Icon(
+                        Icons.arrow_forward,
+                        size: 16,
+                        color: Color(0xFF635BFF),
+                      ),
                     ],
                   ),
                 ),
@@ -542,11 +538,8 @@ class _HomePageState extends State<HomePage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  "Recommended Menu",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
+                  "Menu Hari Ini",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 12),
 
@@ -567,9 +560,7 @@ class _HomePageState extends State<HomePage> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => FoodDetailPage(
-                              itemId: item['id'],
-                            ),
+                            builder: (_) => FoodDetailPage(itemId: item['id']),
                           ),
                         );
                       },
@@ -583,7 +574,9 @@ class _HomePageState extends State<HomePage> {
                               borderRadius: BorderRadius.circular(16),
                               image: item['preview_image'] != null
                                   ? DecorationImage(
-                                      image: NetworkImage(item['preview_image']),
+                                      image: NetworkImage(
+                                        item['preview_image'],
+                                      ),
                                       fit: BoxFit.cover,
                                     )
                                   : null,
@@ -687,10 +680,8 @@ class _BottomNavBar extends StatelessWidget {
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => ProfilePage(
-                    username: username,
-                    phoneNumber: phoneNumber,
-                  ),
+                  builder: (_) =>
+                      ProfilePage(username: username, phoneNumber: phoneNumber),
                 ),
               );
             },
