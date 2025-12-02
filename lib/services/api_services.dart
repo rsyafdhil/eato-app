@@ -368,6 +368,7 @@ class ApiService {
   static Future<Map<String, dynamic>> createOrderWithPayment({
     required int userId,
     required List<Map<String, dynamic>> items,
+    required String alamat,
   }) async {
     try {
       print('>>> createOrderWithPayment: userId=$userId, items=$items');
@@ -376,7 +377,11 @@ class ApiService {
       final response = await http.post(
         Uri.parse("$baseUrl/orders/store"),
         headers: _getHeaders(),
-        body: json.encode({"user_id": userId, "items": items}),
+        body: json.encode({
+          "user_id": userId,
+          "items": items,
+          "alamat": alamat,
+        }),
       );
 
       print('>>> Status: ${response.statusCode}');
@@ -402,6 +407,7 @@ class ApiService {
               'order_code': data['order_code'],
               'total_amount': data['total_amount'],
               'status': data['status'],
+              'alamat': data['alamat'],
             },
             'message': responseData['message'],
           };
@@ -486,6 +492,7 @@ class ApiService {
       if (data['success'] == true && data['data'] != null) {
         return data['data'];
       }
+      print(data);
       return [];
     } else {
       throw Exception('Failed to fetch orders: ${response.body}');

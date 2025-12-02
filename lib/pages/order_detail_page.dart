@@ -16,7 +16,8 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
   bool _isOwner = false;
   bool _isUpdating = false;
   late String _currentStatus;
-
+  Order? orderDetail;
+  bool isLoading = true;
   final List<String> _statusList = [
     'dipesan',
     'dimasak',
@@ -30,6 +31,39 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
     super.initState();
     _currentStatus = widget.order.statusPemesanan;
     _checkUserRole();
+    _loadOrderDetail();
+  }
+
+  Future<void> _loadOrderDetail() async {
+    try {
+      setState(() {
+        isLoading = true;
+      });
+
+      // Ambil data dari API
+      final response = await ApiService.getOrderDetail(widget.order.id);
+
+      // ✅ DEBUG: Print response
+      print('🔍 Response dari API: $response');
+      print('🔍 Alamat dari response: ${response['alamat']}');
+
+      // ✅ PENTING: Parse dari response langsung, BUKAN dari response['data']
+      // Karena di ApiService udah return data['data']
+      final loadedOrder = Order.fromJson(response);
+
+      // ✅ DEBUG: Print order setelah parsing
+      print('🏠 Order alamat setelah parsing: ${loadedOrder.alamat}');
+
+      setState(() {
+        orderDetail = loadedOrder;
+        isLoading = false;
+      });
+    } catch (e) {
+      print('❌ Error: $e');
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 
   Future<void> _checkUserRole() async {
@@ -163,6 +197,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    final displayOrder = orderDetail ?? widget.order;
     return Scaffold(
       appBar: AppBar(
         title: Text('Order #${widget.order.orderCode}'),
@@ -312,14 +347,15 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                         ],
                       ),
                       const SizedBox(height: 12),
-                      _buildInfoRow('Nama', widget.order.customerName),
-                      if (widget.order.customerPhone.isNotEmpty)
+                      _buildInfoRow('Nama', displayOrder.customerName),
+                      _buildInfoRow('Alamat', displayOrder.alamat),
+                      if (displayOrder.customerPhone.isNotEmpty)
                         _buildInfoRow(
                           'No. Telepon',
-                          widget.order.customerPhone,
+                          displayOrder.customerPhone,
                         ),
-                      if (widget.order.customerEmail.isNotEmpty)
-                        _buildInfoRow('Email', widget.order.customerEmail),
+                      if (displayOrder.customerEmail.isNotEmpty)
+                        _buildInfoRow('Email', displayOrder.customerEmail),
                     ],
                   ),
                 ),
@@ -347,6 +383,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                     ),
                     const SizedBox(height: 12),
                     _buildInfoRow('Kode Order', widget.order.orderCode),
+                    _buildInfoRow('Alamat', displayOrder.alamat),
                     _buildInfoRow('Tanggal', widget.order.createdAt),
                     _buildInfoRow(
                       'Total Item',
