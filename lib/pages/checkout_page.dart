@@ -241,6 +241,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                       await ApiService.createOrderWithPayment(
                                         userId: userId,
                                         items: items,
+                                        alamat: _alamatController.text,
                                       );
 
                                   print(

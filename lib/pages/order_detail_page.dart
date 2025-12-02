@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../services/api_services.dart'; // Sesuaikan dengan path kamu
+import 'package:shared_preferences/shared_preferences.dart';
+import '../services/api_services.dart';
 import '../models/order.dart';
 
 class OrderDetailPage extends StatefulWidget {
@@ -15,14 +16,14 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
   bool _isOwner = false;
   bool _isUpdating = false;
   late String _currentStatus;
-
+  Order? orderDetail;
+  bool isLoading = true;
   final List<String> _statusList = [
     'dipesan',
-    'disiapkan',
     'dimasak',
     'diantar',
     'selesai',
-    'dibatalkan',
+    'batal',
   ];
 
   @override
@@ -30,6 +31,39 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
     super.initState();
     _currentStatus = widget.order.statusPemesanan;
     _checkUserRole();
+    _loadOrderDetail();
+  }
+
+  Future<void> _loadOrderDetail() async {
+    try {
+      setState(() {
+        isLoading = true;
+      });
+
+      // Ambil data dari API
+      final response = await ApiService.getOrderDetail(widget.order.id);
+
+      // ✅ DEBUG: Print response
+      print('🔍 Response dari API: $response');
+      print('🔍 Alamat dari response: ${response['alamat']}');
+
+      // ✅ PENTING: Parse dari response langsung, BUKAN dari response['data']
+      // Karena di ApiService udah return data['data']
+      final loadedOrder = Order.fromJson(response);
+
+      // ✅ DEBUG: Print order setelah parsing
+      print('🏠 Order alamat setelah parsing: ${loadedOrder.alamat}');
+
+      setState(() {
+        orderDetail = loadedOrder;
+        isLoading = false;
+      });
+    } catch (e) {
+      print('❌ Error: $e');
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 
   Future<void> _checkUserRole() async {
@@ -51,7 +85,6 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
       }
 
       final success = await ApiService.updateOrderStatus(
-        token,
         widget.order.id,
         newStatus,
       );
@@ -164,6 +197,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    final displayOrder = orderDetail ?? widget.order;
     return Scaffold(
       appBar: AppBar(
         title: Text('Order #${widget.order.orderCode}'),
@@ -283,6 +317,52 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
             ),
             const SizedBox(height: 16),
 
+            // Customer Info (hanya untuk owner)
+            if (_isOwner) ...[
+              Card(
+                elevation: 4,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.person,
+                            color: Colors.deepPurple,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'Informasi Pelanggan',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      _buildInfoRow('Nama', displayOrder.customerName),
+                      _buildInfoRow('Alamat', displayOrder.alamat),
+                      if (displayOrder.customerPhone.isNotEmpty)
+                        _buildInfoRow(
+                          'No. Telepon',
+                          displayOrder.customerPhone,
+                        ),
+                      if (displayOrder.customerEmail.isNotEmpty)
+                        _buildInfoRow('Email', displayOrder.customerEmail),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
             // Order Info
             Card(
               elevation: 4,
@@ -303,6 +383,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                     ),
                     const SizedBox(height: 12),
                     _buildInfoRow('Kode Order', widget.order.orderCode),
+                    _buildInfoRow('Alamat', displayOrder.alamat),
                     _buildInfoRow('Tanggal', widget.order.createdAt),
                     _buildInfoRow(
                       'Total Item',

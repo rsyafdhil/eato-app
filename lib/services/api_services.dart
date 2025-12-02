@@ -368,6 +368,7 @@ class ApiService {
   static Future<Map<String, dynamic>> createOrderWithPayment({
     required int userId,
     required List<Map<String, dynamic>> items,
+    required String alamat,
   }) async {
     try {
       print('>>> createOrderWithPayment: userId=$userId, items=$items');
@@ -376,7 +377,11 @@ class ApiService {
       final response = await http.post(
         Uri.parse("$baseUrl/orders/store"),
         headers: _getHeaders(),
-        body: json.encode({"user_id": userId, "items": items}),
+        body: json.encode({
+          "user_id": userId,
+          "items": items,
+          "alamat": alamat,
+        }),
       );
 
       print('>>> Status: ${response.statusCode}');
@@ -402,6 +407,7 @@ class ApiService {
               'order_code': data['order_code'],
               'total_amount': data['total_amount'],
               'status': data['status'],
+              'alamat': data['alamat'],
             },
             'message': responseData['message'],
           };
@@ -486,6 +492,7 @@ class ApiService {
       if (data['success'] == true && data['data'] != null) {
         return data['data'];
       }
+      print(data);
       return [];
     } else {
       throw Exception('Failed to fetch orders: ${response.body}');
@@ -495,12 +502,18 @@ class ApiService {
   // Update status pemesanan (owner)
   // ✅ 2. Update Status Pemesanan (Khusus Owner/Merchant)
   // Update status pemesanan (hanya owner)
+  // ✅ Return Future<bool> bukan Future<void>
   static Future<bool> updateOrderStatus(
-    String token,
     int orderId,
     String statusPemesanan,
   ) async {
     try {
+      final token = await getToken();
+
+      if (token == null) {
+        throw Exception('Token not found');
+      }
+
       final response = await http.patch(
         Uri.parse('$baseUrl/orders/$orderId/status'),
         headers: {
@@ -515,13 +528,14 @@ class ApiService {
       print('>>> updateOrderStatus Body: ${response.body}');
 
       if (response.statusCode == 200) {
-        return true;
+        return true; // ✅ Return true kalau berhasil
       } else {
-        throw Exception('Failed to update order status');
+        print('❌ Failed with status: ${response.statusCode}');
+        return false; // ✅ Return false kalau gagal
       }
     } catch (e) {
-      print('Error updating order status: $e');
-      throw Exception('Error: $e');
+      print('❌ Error updating order status: $e');
+      return false; // ✅ Return false kalau error
     }
   }
 

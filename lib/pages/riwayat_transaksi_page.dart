@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'profile_page.dart';
 import 'home_page.dart';
 import '../services/api_services.dart';
-import 'order_detail.page.dart';
+import 'order_detail_page.dart';
+import 'login_page.dart';
 
 class RiwayatTransaksiPage extends StatefulWidget {
   final String username;
@@ -35,23 +36,37 @@ class _RiwayatTransaksiPageState extends State<RiwayatTransaksiPage> {
     });
 
     try {
+      print('🔍 Mengambil token...');
+
       // Ambil token dari storage
       final token = await ApiService.getToken();
 
+      print('🔑 Token result: $token');
+      print('🔑 Token is null: ${token == null}');
+      print('🔑 Token length: ${token?.length ?? 0}');
+
       if (token == null) {
+        print('❌ Token null, redirect ke login');
         // Redirect ke login jika token tidak ada
-        Navigator.pushReplacementNamed(context, '/login');
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const LoginPage()),
+          );
+        }
         return;
       }
 
-      // Panggil getUserOrders dengan token
-      final orders = await ApiService.getUserOrders(token); // ✅ Tambahkan token
+      print('✅ Token ada, calling getUserOrders...');
+
+      final orders = await ApiService.getUserOrders(token);
 
       setState(() {
         _orders = orders;
         _isLoading = false;
       });
     } catch (e) {
+      print('❌ Error: $e');
       setState(() {
         _isLoading = false;
       });
