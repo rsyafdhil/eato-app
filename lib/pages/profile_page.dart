@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'riwayat_transaksi_page.dart';
 import 'home_page.dart';
+import 'favorites_page.dart';
+import 'form_update_page.dart';
+import 'login_page.dart';
 
 class ProfilePage extends StatelessWidget {
   final String username;
@@ -78,15 +81,103 @@ class ProfilePage extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    _menuItem(Icons.person, "Profile", "Edit Profile"),
+                    // ✅ Profile menu - Navigate to FormUpdatePage
+                    InkWell(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => FormUpdatePage(
+                              username: username,
+                              phoneNumber: phoneNumber,
+                            ),
+                          ),
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: _menuItem(
+                        context,
+                        Icons.person,
+                        "Profile",
+                        "Edit Profile",
+                      ),
+                    ),
                     const Divider(height: 25),
-                    _menuItem(Icons.favorite, "Favorites", "Favorites"),
+
+                    // ✅ Favorites menu - Navigate to FavoritePage
+                    InkWell(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => FavoritePage(
+                              username: username,
+                              phoneNumber: phoneNumber,
+                            ),
+                          ),
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: _menuItem(
+                        context,
+                        Icons.favorite,
+                        "Favorites",
+                        "Favorites",
+                      ),
+                    ),
                     const Divider(height: 25),
-                    _menuItem(
-                      Icons.logout,
-                      "Log Out",
-                      "Log out",
-                      isLogout: true,
+
+                    // ✅ Logout menu - Navigate to LoginPage
+                    InkWell(
+                      onTap: () {
+                        // Show confirmation dialog
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return AlertDialog(
+                              title: const Text('Log Out'),
+                              content: const Text(
+                                  'Are you sure you want to log out?'),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(15),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.pop(context); // Close dialog
+                                  },
+                                  child: const Text('Cancel'),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.pop(context); // Close dialog
+                                    // Navigate to login and clear all previous routes
+                                    Navigator.pushAndRemoveUntil(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => const LoginPage(),
+                                      ),
+                                      (route) => false,
+                                    );
+                                  },
+                                  child: const Text(
+                                    'Log Out',
+                                    style: TextStyle(color: Colors.red),
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: _menuItem(
+                        context,
+                        Icons.logout,
+                        "Log Out",
+                        "Log out",
+                        isLogout: true,
+                      ),
                     ),
                   ],
                 ),
@@ -161,44 +252,48 @@ class ProfilePage extends StatelessWidget {
 
   // ===================== MENU ITEM WIDGET =====================
   Widget _menuItem(
+    BuildContext context,
     IconData icon,
     String title,
     String subtitle, {
     bool isLogout = false,
   }) {
-    return Row(
-      children: [
-        CircleAvatar(
-          radius: 22,
-          backgroundColor: isLogout
-              ? Colors.black
-              : (title == "Favorites"
-                    ? const Color(0xFFE8D7FF)
-                    : const Color(0xFFFFCE8A)),
-          child: Icon(icon, color: Colors.white),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 15,
-                  color: isLogout ? Colors.black : Colors.black,
-                ),
-              ),
-              Text(
-                subtitle,
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-            ],
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 22,
+            backgroundColor: isLogout
+                ? Colors.black
+                : (title == "Favorites"
+                      ? const Color(0xFFE8D7FF)
+                      : const Color(0xFFFFCE8A)),
+            child: Icon(icon, color: Colors.white),
           ),
-        ),
-        const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-      ],
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                    color: isLogout ? Colors.black : Colors.black,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+          const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+        ],
+      ),
     );
   }
 }
