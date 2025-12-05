@@ -67,13 +67,9 @@ class _HomePageState extends State<HomePage> {
       });
 
       if (tenants.isNotEmpty) {
-        List allItems = [];
-        for (var t in tenants) {
-          final items = await ApiService.getItemsByTenant(t['id']);
-          allItems.addAll(items);
-        }
+        final topItems = await ApiService.getTopFavoriteItems();
         setState(() {
-          recommendedMenu = allItems.take(4).toList();
+          recommendedMenu = topItems;
         });
       }
     } catch (e) {
@@ -538,7 +534,7 @@ class _HomePageState extends State<HomePage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  "Menu Hari Ini",
+                  "Menu Favorit",
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 12),

@@ -340,6 +340,32 @@ class ApiService {
     }
   }
 
+  static Future<List<dynamic>> getTopFavoriteItems() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/top-favorites'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      );
+      print('a');
+
+      if (response.statusCode == 200) {
+        final jsonResponse = json.decode(response.body);
+        // Mengambil data dari key 'data'
+        return jsonResponse['data'] as List;
+      } else {
+        throw Exception(
+          'Failed to load top favorite items. Status: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      print('Error fetching top favorites: $e');
+      throw Exception('Failed to connect to API to get top favorite items: $e');
+    }
+  }
+
   // Remove from favorites
   static Future<void> removeFromFavorites(String userId, int itemId) async {
     try {
@@ -503,10 +529,7 @@ class ApiService {
   // ✅ 2. Update Status Pemesanan (Khusus Owner/Merchant)
   // Update status pemesanan (hanya owner)
   // ✅ Return Future<bool> bukan Future<void>
-  static Future<bool> updateOrderStatus(
-    int orderId,
-    String statusPemesanan,
-  ) async {
+  static Future<bool> updateOrderStatus(int id, String statusPemesanan) async {
     try {
       final token = await getToken();
 
@@ -514,8 +537,8 @@ class ApiService {
         throw Exception('Token not found');
       }
 
-      final response = await http.patch(
-        Uri.parse('$baseUrl/orders/$orderId/status'),
+      final response = await http.put(
+        Uri.parse('$baseUrl/orders/$id/status-pemesanan'),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',
