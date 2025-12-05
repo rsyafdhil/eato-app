@@ -21,7 +21,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
   final List<String> _statusList = [
     'dipesan',
     'dimasak',
-    'diantar',
+    'diantarkan',
     'selesai',
     'batal',
   ];
